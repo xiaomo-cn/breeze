@@ -14,7 +14,7 @@
 | 拖拽 | @dnd-kit | 现代化、可访问的 DnD 库 |
 | 图表 | Recharts (burndown), frappe-gantt (甘特图) | |
 | Markdown | @tiptap/react | 可扩展的富文本编辑器 |
-| 后端框架 | **Spring Boot 3.3 + Java 17** | Java 工程师首选，生态最全 |
+| 后端框架 | **Spring Boot 3.3 + Java 21** | Java 工程师首选，生态最全 |
 | AI 集成 | **Spring AI 1.0+** | 统一 ChatClient、Tool Calling、VectorStore、SSE 流式 |
 | 数据库 | **PostgreSQL 16 + pgvector** | 业务数据 + 向量搜索 + 全文搜索，一套数据库全部搞定 |
 | RAG 未来升级 | **Elasticsearch 8.x**（可选） | 数据量大时切换，Spring AI VectorStore 接口下换依赖即可，改动量极小 |

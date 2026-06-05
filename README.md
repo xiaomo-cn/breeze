@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Java-17-orange?logo=openjdk" alt="Java 17" />
+  <img src="https://img.shields.io/badge/Java-21-orange?logo=openjdk" alt="Java 21" />
   <img src="https://img.shields.io/badge/Spring_Boot-3.3-brightgreen?logo=springboot" alt="Spring Boot 3.3" />
   <img src="https://img.shields.io/badge/React-18-blue?logo=react" alt="React 18" />
   <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript" alt="TypeScript" />
@@ -145,7 +145,7 @@
 | 甘特图 | frappe-gantt | 任务时间线可视化 |
 | 图表 | Recharts | 燃尽图、报表统计图 |
 | Markdown | react-markdown + remark-gfm | AI 消息渲染 |
-| 后端框架 | Spring Boot 3.3 + Java 17 | RESTful API |
+| 后端框架 | Spring Boot 3.3 + Java 21 | RESTful API |
 | ORM | MyBatis-Plus 3.5 | Lambda 查询 + XML Mapper + 分页 |
 | AI 集成 | Spring AI 1.0 | ChatClient + @Tool Calling + PgVectorStore |
 | 数据库 | PostgreSQL 16 + pgvector | 业务数据 + 全文搜索 + HNSW 向量索引 |
