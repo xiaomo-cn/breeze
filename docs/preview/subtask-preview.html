@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>子任务展示方案预览</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f5f5f5;
+    padding: 24px;
+    color: #262626;
+  }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .subtitle { color: #8c8c8c; margin-bottom: 20px; font-size: 13px; }
+  .layout { display: flex; gap: 24px; align-items: flex-start; }
+  .panel { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); overflow: hidden; }
+  .panel-header {
+    padding: 12px 16px; font-size: 13px; font-weight: 600; color: #595959;
+    border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 8px;
+  }
+  .panel-header .badge { font-size: 11px; background: #f0f0f0; padding: 1px 8px; border-radius: 10px; font-weight: 400; }
+
+  /* ====== Tab 栏 ====== */
+  .tabs { display: flex; border-bottom: 1px solid #f0f0f0; padding: 0 16px; }
+  .tab { padding: 10px 16px; font-size: 13px; color: #8c8c8c; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab.active { color: #1677ff; border-bottom-color: #1677ff; }
+  .tab-count { font-size: 11px; color: #bbb; margin-left: 2px; }
+
+  /* ====== 标签 ====== */
+  .tag { font-size: 11px; padding: 0 6px; border-radius: 3px; line-height: 20px; white-space: nowrap; flex-shrink: 0; }
+  .tag-status { background: #e6f4ff; color: #1677ff; }
+  .tag-status.progress { background: #fff7e6; color: #fa8c16; }
+  .tag-status.done { background: #f6ffed; color: #52c41a; }
+  .tag-priority { background: #fff1f0; color: #f5222d; }
+  .tag-priority.medium { background: #fff7e6; color: #d48806; }
+  .tag-priority.low { background: #f5f5f5; color: #8c8c8c; }
+  .tag-type { background: #f5f5f5; color: #595959; }
+
+  /* ====== Drawer ====== */
+  .drawer { width: 560px; }
+  .drawer-header { padding: 16px 20px; border-bottom: 1px solid #f0f0f0; }
+  .drawer-header .task-id { color: #8c8c8c; font-size: 13px; }
+  .drawer-header .task-name { font-size: 16px; font-weight: 600; margin-top: 2px; }
+  .drawer-header .progress-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .progress-bar { flex: 1; height: 6px; background: #f0f0f0; border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: #1677ff; border-radius: 3px; transition: width 0.4s ease; }
+  .progress-text { font-size: 12px; color: #8c8c8c; white-space: nowrap; }
+  .drawer-body { }
+
+  /* ====== 子任务列表 ====== */
+  .subtask-list { padding: 4px 8px 8px; }
+  .section-label { font-size: 11px; color: #8c8c8c; padding: 10px 12px 4px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; }
+  .subtask-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s;
+    position: relative;
+  }
+  .subtask-row:hover { background: #f0f5ff; }
+  .subtask-row.just-done { animation: flash-green 1.2s ease; }
+  .subtask-row.just-started { animation: flash-orange 1.2s ease; }
+  @keyframes flash-green { 0% { background: #f6ffed; } 100% { background: transparent; } }
+  @keyframes flash-orange { 0% { background: #fff7e6; } 100% { background: transparent; } }
+
+  .subtask-row .drill-icon { width: 16px; color: #bbb; font-size: 11px; text-align: center; flex-shrink: 0; }
+  .subtask-row .task-key { color: #8c8c8c; font-size: 12px; flex-shrink: 0; width: 55px; }
+  .subtask-row .task-title { flex: 1; font-size: 13px; line-height: 1.4; }
+  .subtask-row .task-title.done-text { text-decoration: line-through; color: #bbb; }
+  .subtask-row .hours { color: #8c8c8c; font-size: 12px; flex-shrink: 0; width: 36px; text-align: right; }
+  .subtask-row .assignee-avatar {
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: #fff; font-weight: 500;
+  }
+
+  /* 行内操作按钮 */
+  .row-actions {
+    display: none; align-items: center; gap: 2px; flex-shrink: 0;
+  }
+  .subtask-row:hover .row-actions { display: flex; }
+  .row-actions button {
+    border: none; background: none; cursor: pointer; padding: 2px 6px; border-radius: 3px;
+    font-size: 11px; color: #595959; transition: all 0.15s; white-space: nowrap;
+  }
+  .row-actions .btn-start:hover { color: #fa8c16; background: #fff7e6; }
+  .row-actions .btn-done:hover { color: #52c41a; background: #f6ffed; }
+  .row-actions .btn-delete:hover { color: #f5222d; background: #fff1f0; }
+
+  /* ====== 树形 ====== */
+  .tree-node { }
+  .tree-node .tree-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 4px; cursor: pointer; margin: 0 12px; }
+  .tree-node .tree-row:hover { background: #f0f5ff; }
+  .tree-node .toggle { width: 16px; color: #bbb; font-size: 10px; text-align: center; flex-shrink: 0; }
+  .tree-children { padding-left: 24px; border-left: 1px dashed #e8e8e8; margin-left: 20px; }
+
+  /* ====== 看板卡片 ====== */
+  .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px; }
+  .task-card { background: #fff; border: 1px solid #f0f0f0; border-radius: 8px; padding: 12px; cursor: grab; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: box-shadow 0.15s; }
+  .task-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  .task-card .card-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .task-card .card-key { font-size: 11px; color: #8c8c8c; }
+  .task-card .card-title { font-size: 13px; margin-bottom: 8px; }
+  .task-card .card-footer { display: flex; align-items: center; justify-content: space-between; }
+  .task-card .card-tags { display: flex; gap: 4px; }
+  .subtask-badge {
+    display: inline-flex; align-items: center; gap: 3px; font-size: 11px;
+    color: #1677ff; background: #e6f4ff; padding: 1px 7px; border-radius: 10px;
+    cursor: default; transition: background 0.15s;
+  }
+  .subtask-badge.done-all { color: #52c41a; background: #f6ffed; }
+
+  /* ====== 工具栏 ====== */
+  .toolbar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
+  .toolbar button { padding: 4px 12px; border: 1px solid #d9d9d9; border-radius: 4px; background: #fff; cursor: pointer; font-size: 12px; transition: all 0.15s; }
+  .toolbar button.active { border-color: #1677ff; color: #1677ff; background: #e6f4ff; }
+  .toolbar button:hover { border-color: #1677ff; }
+
+  .add-btn-row { padding: 8px 16px; }
+  .add-btn { width: 100%; padding: 6px; border: 1px dashed #d9d9d9; border-radius: 6px; background: none; color: #1677ff; cursor: pointer; font-size: 13px; }
+  .add-btn:hover { border-color: #1677ff; background: #f0f5ff; }
+
+  .toast {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 999;
+    background: #262626; color: #fff; padding: 8px 20px; border-radius: 6px; font-size: 13px;
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .toast.show { opacity: 1; }
+
+  .right-panel { flex: 0.55; }
+  .helper { font-size: 12px; color: #8c8c8c; margin-top: 16px; line-height: 1.6; padding: 0 16px 16px; }
+</style>
+</head>
+<body>
+
+<h1>📋 子任务操作交互预览</h1>
+<p class="subtitle">悬停子任务行 → 显示操作按钮。点击"▶"进入子任务详情。可实际操作体验。</p>
+
+<div class="toolbar">
+  <span style="font-size:12px;color:#8c8c8c;margin-right:4px;">展示：</span>
+  <button id="btn-flat" class="active" onclick="switchMode('flat')">📄 扁平列表</button>
+  <button id="btn-tree" onclick="switchMode('tree')">🌳 树形结构</button>
+  <span style="color:#d9d9d9;margin:0 4px;">|</span>
+  <button onclick="resetAll()">🔄 重置数据</button>
+  <button onclick="completeAll()">✅ 全部完成</button>
+</div>
+
+<div class="layout">
+  <!-- ====== 左：Drawer ====== -->
+  <div class="panel drawer" id="main-drawer">
+    <div class="drawer-header">
+      <div class="task-id">CASES-42 · Story</div>
+      <div class="task-name">用户中心页面改版</div>
+      <div class="progress-row">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:57%;"></div></div>
+        <span class="progress-text" id="progress-text">4/7 已完成</span>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab"><span>详情</span></div>
+      <div class="tab"><span>评论</span><span class="tab-count">3</span></div>
+      <div class="tab"><span>附件</span><span class="tab-count">2</span></div>
+      <div class="tab active"><span>子任务</span><span class="tab-count" id="subtask-count">7</span></div>
+    </div>
+    <div class="drawer-body">
+      <div class="add-btn-row"><button class="add-btn" onclick="showToast('将弹出快速创建表单（标题/类型/优先级/指派人）')">＋ 添加子任务</button></div>
+      <div id="flat-view"></div>
+      <div id="tree-view" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- ====== 右：看板卡片 ====== -->
+  <div class="panel right-panel">
+    <div class="panel-header">📌 看板 TaskCard <span class="badge">子任务进度徽章</span></div>
+    <div class="card-grid">
+      <div class="task-card" onclick="showToast('点击任务卡片 → 打开 Drawer → 切换到子任务 Tab')">
+        <div class="card-header"><span style="font-size:12px;">📋</span><span class="card-key">CASES-42</span></div>
+        <div class="card-title">用户中心页面改版</div>
+        <div class="card-footer">
+          <div class="card-tags"><span class="tag tag-priority">high</span><span class="tag tag-type">story</span></div>
+          <span class="subtask-badge" id="badge-42" title="7 个子任务，4 个已完成">✓4/7</span>
+        </div>
+      </div>
+      <div class="task-card">
+        <div class="card-header"><span style="font-size:12px;">🐛</span><span class="card-key">CASES-58</span></div>
+        <div class="card-title">登录页密码校验异常</div>
+        <div class="card-footer">
+          <div class="card-tags"><span class="tag tag-priority" style="background:#fff1f0;color:#f5222d;">urgent</span><span class="tag tag-type">bug</span></div>
+        </div>
+      </div>
+      <div class="task-card">
+        <div class="card-header"><span style="font-size:12px;">📋</span><span class="card-key">CASES-60</span></div>
+        <div class="card-title">消息通知模块重构</div>
+        <div class="card-footer">
+          <div class="card-tags"><span class="tag tag-priority medium">medium</span><span class="tag tag-type">task</span></div>
+          <span class="subtask-badge" id="badge-60">✓0/3</span>
+        </div>
+      </div>
+      <div class="task-card">
+        <div class="card-header"><span style="font-size:12px;">🏷️</span><span class="card-key">CASES-63</span></div>
+        <div class="card-title">添加全局搜索功能</div>
+        <div class="card-footer">
+          <div class="card-tags"><span class="tag tag-priority medium">medium</span><span class="tag tag-type">story</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="helper">
+      <strong>说明：</strong><br>
+      • 有子任务 → 显示蓝色 <code>✓完成/总数</code> 徽章<br>
+      • 全部完成 → 徽章变绿色<br>
+      • 无子任务 → 不显示徽章<br>
+      • Drawer 中操作子任务后，徽章实时更新
+    </div>
+  </div>
+</div>
+
+<!-- 子任务详情 Drawer（模拟点击进入子任务） -->
+<div id="sub-drawer" class="panel drawer" style="display:none; position:fixed; right:24px; top:24px; bottom:24px; z-index:100; overflow-y:auto; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+  <div class="drawer-header" style="display:flex;align-items:center;justify-content:space-between;">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button onclick="closeSubDrawer()" style="border:none;background:none;cursor:pointer;font-size:14px;padding:2px 6px;border-radius:3px;">← 返回</button>
+        <span style="color:#8c8c8c;font-size:13px;" id="sub-drawer-key">CASES-46</span>
+        <span class="tag tag-type" id="sub-drawer-type">subtask</span>
+      </div>
+      <div class="task-name" id="sub-drawer-title" style="margin-top:8px;">用户信息编辑 API 开发</div>
+      <div class="progress-row">
+        <div class="progress-bar"><div class="progress-fill" id="sub-progress-fill" style="width:50%;"></div></div>
+        <span class="progress-text" id="sub-progress-text">1/2 已完成</span>
+      </div>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab active"><span>子任务</span><span class="tab-count" id="sub-subtask-count">2</span></div>
+  </div>
+  <div class="drawer-body">
+    <div class="add-btn-row"><button class="add-btn" onclick="showToast('可为子任务继续添加子子任务')">＋ 添加子任务</button></div>
+    <div class="subtask-list" id="sub-subtask-list"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ====== 数据模型 ======
+let tasks = [
+  { id:45, key:'CASES-45', title:'数据库用户表扩展字段设计', status:'done', priority:'high', type:'subtask', hours:4, assignee:'张', children:[
+    { id:51, key:'CASES-51', title:'users 表 DDL 编写', status:'done', priority:'high', type:'subtask', hours:2, assignee:'张' },
+    { id:52, key:'CASES-52', title:'Flyway 迁移脚本', status:'done', priority:'high', type:'subtask', hours:2, assignee:'张' }
+  ]},
+  { id:46, key:'CASES-46', title:'用户信息编辑 API 开发', status:'in_progress', priority:'high', type:'subtask', hours:8, assignee:'李', children:[
+    { id:55, key:'CASES-55', title:'PUT /api/user/profile', status:'in_progress', priority:'high', type:'subtask', hours:4, assignee:'李' },
+    { id:56, key:'CASES-56', title:'单元测试 + 集成测试', status:'todo', priority:'medium', type:'subtask', hours:4, assignee:'王' }
+  ]},
+  { id:47, key:'CASES-47', title:'头像上传组件开发', status:'todo', priority:'medium', type:'subtask', hours:6, assignee:'王' },
+  { id:48, key:'CASES-48', title:'用户中心页面 UI 布局', status:'done', priority:'high', type:'subtask', hours:3, assignee:'赵' },
+  { id:49, key:'CASES-49', title:'手机号绑定/解绑功能', status:'done', priority:'medium', type:'subtask', hours:5, assignee:'李' },
+  { id:50, key:'CASES-50', title:'用户操作日志记录', status:'done', priority:'low', type:'subtask', hours:2, assignee:'赵' },
+  { id:53, key:'CASES-53', title:'旧版用户中心入口兼容处理', status:'done', priority:'medium', type:'bug', hours:1.5, assignee:'张' },
+];
+
+let currentView = 'flat';
+
+// ====== 计算进度 ======
+function countStats(list) {
+  let total = 0, done = 0;
+  function walk(items) {
+    items.forEach(t => {
+      total++;
+      if (t.status === 'done') done++;
+      if (t.children) walk(t.children);
+    });
+  }
+  walk(list);
+  return { total, done };
+}
+
+function updateProgress() {
+  const { total, done } = countStats(tasks);
+  const pct = total > 0 ? Math.round(done/total*100) : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = `${done}/${total} 已完成`;
+  document.getElementById('subtask-count').textContent = total;
+  // 更新徽章
+  const badge42 = document.getElementById('badge-42');
+  if (badge42) {
+    badge42.textContent = `✓${done}/${total}`;
+    badge42.className = done === total ? 'subtask-badge done-all' : 'subtask-badge';
+  }
+}
+
+// ====== 渲染扁平列表 ======
+function renderFlat() {
+  const container = document.getElementById('flat-view');
+  const active = tasks.filter(t => t.status !== 'done');
+  const done = tasks.filter(t => t.status === 'done');
+
+  let html = '';
+  if (active.length > 0) {
+    html += '<div class="section-label">进行中</div>';
+    html += active.map(t => flatRow(t)).join('');
+  }
+  if (done.length > 0) {
+    html += '<div class="section-label">已完成</div>';
+    html += done.map(t => flatRow(t)).join('');
+  }
+  container.innerHTML = html;
+  updateProgress();
+}
+
+function flatRow(t) {
+  const statusLabels = { todo: '待开始', in_progress: '进行中', done: '已完成' };
+  const statusClass = t.status === 'done' ? 'done' : (t.status === 'in_progress' ? 'progress' : '');
+  const hasChildren = t.children && t.children.length > 0;
+  const nestedIcon = hasChildren ? ` <span style="color:#bbb;font-size:10px;">(${t.children.length}子)</span>` : '';
+  return `
+    <div class="subtask-row" id="row-${t.id}" data-id="${t.id}">
+      <span class="drill-icon" onclick="event.stopPropagation();openSubDrawer(${t.id})" title="进入子任务详情">▶</span>
+      <span class="task-key">${t.key}</span>
+      <span class="task-title ${t.status==='done'?'done-text':''}">${t.title}${nestedIcon}</span>
+      <span class="tag tag-type">${t.type}</span>
+      <span class="tag tag-status ${statusClass}">${statusLabels[t.status]}</span>
+      <span class="tag tag-priority ${t.priority==='medium'?'medium':(t.priority==='low'?'low':'')}">${t.priority}</span>
+      <span class="assignee-avatar" style="background:${avatarColor(t.assignee)};">${t.assignee}</span>
+      <span class="hours">${t.hours}h</span>
+      <span class="row-actions">
+        ${t.status === 'todo' ? `<button class="btn-start" onclick="event.stopPropagation();startTask(${t.id})" title="开始进行">▶ 开始</button>` : ''}
+        ${t.status !== 'done' ? `<button class="btn-done" onclick="event.stopPropagation();doneTask(${t.id})" title="标记完成">✓ 完成</button>` : ''}
+        ${t.status === 'done' ? `<button class="btn-start" onclick="event.stopPropagation();reopenTask(${t.id})" title="重新打开">↺ 重开</button>` : ''}
+        <button class="btn-delete" onclick="event.stopPropagation();deleteTask(${t.id})" title="删除">🗑</button>
+      </span>
+    </div>`;
+}
+
+// ====== 渲染树形结构 ======
+function renderTree() {
+  const container = document.getElementById('tree-view');
+  container.innerHTML = tasks.map(t => treeNode(t)).join('');
+  updateProgress();
+}
+
+function treeNode(t, depth = 0) {
+  const statusLabels = { todo: '待开始', in_progress: '进行中', done: '已完成' };
+  const statusClass = t.status === 'done' ? 'done' : (t.status === 'in_progress' ? 'progress' : '');
+  const hasChildren = t.children && t.children.length > 0;
+  const toggleIcon = hasChildren ? '<span class="toggle" onclick="event.stopPropagation();toggleTreeNode(this)">▼</span>' : '<span class="toggle" style="visibility:hidden;">▶</span>';
+  let html = `
+    <div class="tree-node" data-id="${t.id}">
+      <div class="tree-row" id="trow-${t.id}" style="padding-left:${12 + depth*0}px;">
+        ${toggleIcon}
+        <span class="task-key">${t.key}</span>
+        <span class="task-title ${t.status==='done'?'done-text':''}" style="font-size:12px;flex:1;">${t.title}</span>
+        <span class="tag tag-type">${t.type}</span>
+        <span class="tag tag-status ${statusClass}">${statusLabels[t.status]}</span>
+        <span class="tag tag-priority ${t.priority==='medium'?'medium':(t.priority==='low'?'low':'')}">${t.priority}</span>
+        <span class="assignee-avatar" style="background:${avatarColor(t.assignee)};">${t.assignee}</span>
+        <span class="hours">${t.hours}h</span>
+        <span class="row-actions">
+          ${t.status === 'todo' ? `<button class="btn-start" onclick="event.stopPropagation();startTask(${t.id})">▶ 开始</button>` : ''}
+          ${t.status !== 'done' ? `<button class="btn-done" onclick="event.stopPropagation();doneTask(${t.id})">✓ 完成</button>` : ''}
+          ${t.status === 'done' ? `<button class="btn-start" onclick="event.stopPropagation();reopenTask(${t.id})">↺ 重开</button>` : ''}
+          <button class="btn-delete" onclick="event.stopPropagation();deleteTask(${t.id})">🗑</button>
+        </span>
+      </div>`;
+  if (hasChildren) {
+    html += `<div class="tree-children">${t.children.map(c => treeNode(c, depth+1)).join('')}</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+function toggleTreeNode(el) {
+  const children = el.closest('.tree-node').querySelector('.tree-children');
+  if (children) {
+    const hidden = children.style.display === 'none';
+    children.style.display = hidden ? '' : 'none';
+    el.textContent = hidden ? '▼' : '▶';
+  }
+}
+
+// ====== 递归查找任务 ======
+function findTask(id, list = tasks) {
+  for (const t of list) {
+    if (t.id === id) return t;
+    if (t.children) {
+      const found = findTask(id, t.children);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+// ====== 操作 ======
+function startTask(id) {
+  const t = findTask(id);
+  if (t) {
+    t.status = 'in_progress';
+    const row = document.getElementById('row-'+id) || document.getElementById('trow-'+id);
+    if (row) { row.classList.add('just-started'); setTimeout(() => row.classList.remove('just-started'), 1200); }
+    rerender();
+    showToast(`${t.key} 已开始`);
+  }
+}
+
+function doneTask(id) {
+  const t = findTask(id);
+  if (t) {
+    t.status = 'done';
+    // 递归完成子任务
+    if (t.children) t.children.forEach(c => { c.status = 'done'; });
+    const row = document.getElementById('row-'+id) || document.getElementById('trow-'+id);
+    if (row) { row.classList.add('just-done'); setTimeout(() => row.classList.remove('just-done'), 1200); }
+    rerender();
+    showToast(`${t.key} 已完成`);
+  }
+}
+
+function reopenTask(id) {
+  const t = findTask(id);
+  if (t) { t.status = 'todo'; rerender(); showToast(`${t.key} 已重新打开`); }
+}
+
+function deleteTask(id) {
+  function remove(list) {
+    const idx = list.findIndex(t => t.id === id);
+    if (idx >= 0) { list.splice(idx, 1); return true; }
+    for (const t of list) {
+      if (t.children && remove(t.children)) return true;
+    }
+    return false;
+  }
+  const t = findTask(id);
+  if (t && confirm(`确认删除子任务 "${t.title}"？`)) {
+    remove(tasks);
+    rerender();
+    showToast(`已删除 ${t.key}`);
+  }
+}
+
+function completeAll() {
+  function walk(list) { list.forEach(t => { t.status = 'done'; if (t.children) walk(t.children); }); }
+  walk(tasks);
+  rerender();
+  showToast('全部子任务已完成 ✓');
+}
+
+function resetAll() {
+  tasks = [
+    { id:45, key:'CASES-45', title:'数据库用户表扩展字段设计', status:'done', priority:'high', type:'subtask', hours:4, assignee:'张', children:[
+      { id:51, key:'CASES-51', title:'users 表 DDL 编写', status:'done', priority:'high', type:'subtask', hours:2, assignee:'张' },
+      { id:52, key:'CASES-52', title:'Flyway 迁移脚本', status:'done', priority:'high', type:'subtask', hours:2, assignee:'张' }
+    ]},
+    { id:46, key:'CASES-46', title:'用户信息编辑 API 开发', status:'in_progress', priority:'high', type:'subtask', hours:8, assignee:'李', children:[
+      { id:55, key:'CASES-55', title:'PUT /api/user/profile', status:'in_progress', priority:'high', type:'subtask', hours:4, assignee:'李' },
+      { id:56, key:'CASES-56', title:'单元测试 + 集成测试', status:'todo', priority:'medium', type:'subtask', hours:4, assignee:'王' }
+    ]},
+    { id:47, key:'CASES-47', title:'头像上传组件开发', status:'todo', priority:'medium', type:'subtask', hours:6, assignee:'王' },
+    { id:48, key:'CASES-48', title:'用户中心页面 UI 布局', status:'done', priority:'high', type:'subtask', hours:3, assignee:'赵' },
+    { id:49, key:'CASES-49', title:'手机号绑定/解绑功能', status:'done', priority:'medium', type:'subtask', hours:5, assignee:'李' },
+    { id:50, key:'CASES-50', title:'用户操作日志记录', status:'done', priority:'low', type:'subtask', hours:2, assignee:'赵' },
+    { id:53, key:'CASES-53', title:'旧版用户中心入口兼容处理', status:'done', priority:'medium', type:'bug', hours:1.5, assignee:'张' },
+  ];
+  rerender();
+  closeSubDrawer();
+  showToast('数据已重置');
+}
+
+// ====== 子任务 Drawer（点击▶进入） ======
+function openSubDrawer(id) {
+  const t = findTask(id);
+  if (!t) return;
+  if (!t.children || t.children.length === 0) {
+    showToast(`${t.key} 没有子子任务，将打开任务详情编辑面板`);
+    return;
+  }
+  document.getElementById('sub-drawer-key').textContent = t.key;
+  document.getElementById('sub-drawer-title').textContent = t.title;
+  document.getElementById('sub-drawer-type').textContent = t.type;
+  document.getElementById('sub-drawer').style.display = 'block';
+  document.getElementById('sub-subtask-count').textContent = t.children.length;
+  renderSubSubtasks(t);
+}
+
+function closeSubDrawer() {
+  document.getElementById('sub-drawer').style.display = 'none';
+}
+
+function renderSubSubtasks(parent) {
+  const { total, done } = countStats(parent.children);
+  document.getElementById('sub-progress-fill').style.width = total>0 ? Math.round(done/total*100)+'%' : '0%';
+  document.getElementById('sub-progress-text').textContent = `${done}/${total} 已完成`;
+
+  const container = document.getElementById('sub-subtask-list');
+  container.innerHTML = parent.children.map(t => {
+    const statusLabels = { todo: '待开始', in_progress: '进行中', done: '已完成' };
+    const statusClass = t.status === 'done' ? 'done' : (t.status === 'in_progress' ? 'progress' : '');
+    return `
+      <div class="subtask-row" id="row-${t.id}">
+        <span class="drill-icon" style="visibility:hidden;">▶</span>
+        <span class="task-key">${t.key}</span>
+        <span class="task-title ${t.status==='done'?'done-text':''}">${t.title}</span>
+        <span class="tag tag-type">${t.type}</span>
+        <span class="tag tag-status ${statusClass}">${statusLabels[t.status]}</span>
+        <span class="tag tag-priority ${t.priority==='medium'?'medium':(t.priority==='low'?'low':'')}">${t.priority}</span>
+        <span class="assignee-avatar" style="background:${avatarColor(t.assignee)};">${t.assignee}</span>
+        <span class="hours">${t.hours}h</span>
+        <span class="row-actions">
+          ${t.status === 'todo' ? `<button class="btn-start" onclick="event.stopPropagation();startSubTask(${t.id},${parent.id})">▶ 开始</button>` : ''}
+          ${t.status !== 'done' ? `<button class="btn-done" onclick="event.stopPropagation();doneSubTask(${t.id},${parent.id})">✓ 完成</button>` : ''}
+          ${t.status === 'done' ? `<button class="btn-start" onclick="event.stopPropagation();reopenSubTask(${t.id},${parent.id})">↺ 重开</button>` : ''}
+        </span>
+      </div>`;
+  }).join('');
+}
+
+function startSubTask(id, parentId) {
+  const t = findTask(id);
+  if (t) { t.status = 'in_progress'; syncAll(); showToast(`${t.key} 已开始`); }
+}
+function doneSubTask(id, parentId) {
+  const t = findTask(id);
+  if (t) { t.status = 'done'; syncAll(); showToast(`${t.key} 已完成`); }
+}
+function reopenSubTask(id, parentId) {
+  const t = findTask(id);
+  if (t) { t.status = 'todo'; syncAll(); showToast(`${t.key} 已重新打开`); }
+}
+function syncAll() {
+  rerender();
+  // 刷新子 Drawer
+  const subKey = document.getElementById('sub-drawer-key').textContent;
+  if (subKey) {
+    const subId = parseInt(subKey.replace('CASES-',''));
+    const parent = findTask(subId);
+    if (parent && parent.children) renderSubSubtasks(parent);
+  }
+}
+
+// ====== 辅助 ======
+function avatarColor(name) {
+  const colors = { '张':'#1677ff', '李':'#52c41a', '王':'#fa8c16', '赵':'#722ed1' };
+  return colors[name] || '#8c8c8c';
+}
+
+function rerender() {
+  if (currentView === 'flat') renderFlat();
+  else renderTree();
+}
+
+function switchMode(mode) {
+  currentView = mode;
+  document.getElementById('btn-flat').classList.toggle('active', mode==='flat');
+  document.getElementById('btn-tree').classList.toggle('active', mode==='tree');
+  document.getElementById('flat-view').style.display = mode==='flat' ? '' : 'none';
+  document.getElementById('tree-view').style.display = mode==='tree' ? '' : 'none';
+  rerender();
+}
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+// ====== 初始化 ======
+renderFlat();
+</script>
+
+</body>
+</html>

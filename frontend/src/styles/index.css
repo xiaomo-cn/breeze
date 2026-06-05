@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: linear-gradient(135deg, #e2e9ff 0%, #dfe8fd 20%, #e0f3ee 50%, #ebf8f4 75%, #f5faf7 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* 评论富文本内容样式 */
+.comment-html-content p {
+  margin: 0 0 4px;
+}
+.comment-html-content p:last-child {
+  margin-bottom: 0;
+}
+.comment-html-content ul,
+.comment-html-content ol {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+.comment-html-content li {
+  margin-bottom: 2px;
+}
+.comment-html-content blockquote {
+  border-left: 3px solid #d9d9d9;
+  padding-left: 12px;
+  margin: 4px 0;
+  color: #666;
+}
+.comment-html-content pre {
+  background: #f5f5f5;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin: 4px 0;
+  overflow-x: auto;
+  font-size: 12px;
+}
+.comment-html-content code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 12px;
+  background: #f0f0f0;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.comment-html-content pre code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+.comment-html-content a {
+  color: #1677ff;
+  text-decoration: underline;
+}
+.comment-html-content img {
+  max-width: 100%;
+  max-height: 400px;
+  border-radius: 6px;
+  margin: 4px 0;
+  cursor: pointer;
+}
+.comment-html-content mark {
+  padding: 1px 2px;
+  border-radius: 2px;
+}
+
+/* 装饰光斑 */
+#root {
+  position: relative;
+}
+
+#root::before {
+  content: '';
+  position: fixed;
+  top: -80px;
+  right: -60px;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(59,130,246,0.12), transparent 65%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root::after {
+  content: '';
+  position: fixed;
+  bottom: -100px;
+  left: -40px;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(6,182,212,0.08), transparent 65%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 中间区域装饰光斑 */
+body::before {
+  content: '';
+  position: fixed;
+  top: 35%;
+  right: 8%;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(99,102,241,0.06), transparent 65%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  bottom: 25%;
+  left: 35%;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(16,185,129,0.05), transparent 65%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 侧边栏样式 */
+.ant-menu-submenu-title {
+  font-weight: 700 !important;
+  color: #1e293b !important;
+}
+
+.ant-menu-submenu-title .ant-menu-item-icon {
+  color: #3b82f6 !important;
+}
+
+.ant-menu-item-selected {
+  font-weight: 600 !important;
+}

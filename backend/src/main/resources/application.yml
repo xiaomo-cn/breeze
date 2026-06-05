@@ -1,0 +1,97 @@
+spring:
+  application:
+    name: breeze
+
+  datasource:
+    url: jdbc:postgresql://localhost:15432/breeze
+    username: pgvector
+    password: pgvector
+    driver-class-name: org.postgresql.Driver
+
+  flyway:
+    enabled: false
+    clean-disabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  ai:
+    openai:
+      api-key: ${DEEPSEEK_API_KEY:}
+      base-url: https://api.deepseek.com
+      chat:
+        options:
+          model: deepseek-v4-pro
+          temperature: 0.3
+          max-tokens: 4096
+      embedding:
+        api-key: ${EMBEDDING_API_KEY:}
+        base-url: ${EMBEDDING_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
+        options:
+          model: ${EMBEDDING_MODEL:text-embedding-v3}
+
+    vectorstore:
+      pgvector:
+        initialize-schema: false
+        dimensions: 1024
+        index-type: hnsw
+        distance-type: cosine_distance
+        id-type: text
+        table-name: vector_store
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: cn.xiaomo.breeze
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: isDeleted
+      logic-delete-value: true
+      logic-not-delete-value: false
+
+jwt:
+  secret: ${JWT_SECRET:breeze-dev-secret-key-min-256-bits-long}
+  access-token-ttl: 3600000      # 1 hour
+  refresh-token-ttl: 604800000   # 7 days
+
+server:
+  port: 8080
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 300000  # 5 min default
+
+logging:
+  level:
+    cn.xiaomo.breeze: DEBUG
+
+app:
+  storage:
+    provider: ${STORAGE_PROVIDER:local}
+    local:
+      upload-dir: ${UPLOAD_DIR:./uploads}
+    s3:
+      endpoint: ${S3_ENDPOINT:https://oss-cn-hangzhou.aliyuncs.com}
+      region: ${S3_REGION:cn-hangzhou}
+      access-key: ${S3_ACCESS_KEY:xxx}
+      secret-key: ${S3_SECRET_KEY:xxx}
+      bucket-name: ${S3_BUCKET:breeze}
+      cdn-domain: ${S3_CDN_DOMAIN:}
+      url-expiration-minutes: ${S3_URL_EXPIRATION:120}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always

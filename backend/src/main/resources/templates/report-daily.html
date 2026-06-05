@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8"/>
+<style>
+  body { font-family: 'Source Han Sans SC', 'SimSun', sans-serif; font-size: 12px; }
+  h1 { font-size: 18px; text-align: center; }
+  h2 { font-size: 14px; margin-top: 16px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+  th { background-color: #f5f5f5; }
+  .stats { margin: 12px 0; }
+  .stats span { margin-right: 24px; }
+</style>
+</head>
+<body>
+<h1>日报 — <span th:text="${report.date}"></span></h1>
+
+<div class="stats">
+  <span>创建: <strong th:text="${report.createdCount}">0</strong></span>
+  <span>完成: <strong th:text="${report.completedCount}">0</strong></span>
+</div>
+
+<h2>已完成任务</h2>
+<table>
+  <tr><th>编号</th><th>标题</th><th>优先级</th><th>负责人</th></tr>
+  <tr th:each="t : ${report.completedTasks}">
+    <td th:text="${t.key}"></td>
+    <td th:text="${t.title}"></td>
+    <td th:text="${t.priority}"></td>
+    <td th:text="${t.assigneeName}"></td>
+  </tr>
+</table>
+
+<h2>进行中任务</h2>
+<table>
+  <tr><th>编号</th><th>标题</th><th>优先级</th><th>负责人</th></tr>
+  <tr th:each="t : ${report.inProgressTasks}">
+    <td th:text="${t.key}"></td>
+    <td th:text="${t.title}"></td>
+    <td th:text="${t.priority}"></td>
+    <td th:text="${t.assigneeName}"></td>
+  </tr>
+</table>
+
+<h2>阻塞任务</h2>
+<table>
+  <tr><th>编号</th><th>标题</th><th>优先级</th><th>负责人</th></tr>
+  <tr th:each="t : ${report.blockedTasks}">
+    <td th:text="${t.key}"></td>
+    <td th:text="${t.title}"></td>
+    <td th:text="${t.priority}"></td>
+    <td th:text="${t.assigneeName}"></td>
+  </tr>
+</table>
+</body>
+</html>

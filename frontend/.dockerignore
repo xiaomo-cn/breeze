@@ -1,0 +1,40 @@
+# 依赖
+node_modules/
+
+# 构建产物
+dist/
+build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+.dockerignore
+
+# 测试
+coverage/
+*.test.ts
+*.test.tsx
+__tests__/
+
+# 文档
+docs/
+*.md
+README.md
+
+# 环境变量
+.env
+.env.local
+.env.*.local

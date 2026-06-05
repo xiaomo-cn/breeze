@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.xiaomo.breeze.task.TaskMapper">
+
+    <!-- 关键词搜索：标题和描述 ILIKE 模糊匹配，支持中英文 -->
+    <select id="fulltextSearch" resultType="cn.xiaomo.breeze.task.Task">
+        SELECT t.* FROM tasks t
+        WHERE t.project_id = #{projectId}
+          AND t.is_deleted = FALSE
+          AND (t.title ILIKE CONCAT('%', #{query}, '%')
+               OR t.description ILIKE CONCAT('%', #{query}, '%'))
+        ORDER BY
+          CASE WHEN t.title ILIKE CONCAT('%', #{query}, '%') THEN 0 ELSE 1 END,
+          t.updated_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 查询指定父任务的所有未删除子任务 -->
+    <select id="selectByParentId" resultType="cn.xiaomo.breeze.task.Task">
+        SELECT * FROM tasks
+        WHERE parent_id = #{parentId}
+          AND is_deleted = FALSE
+        ORDER BY sort_order ASC, created_at ASC
+    </select>
+
+    <!-- 批量统计子任务数量 -->
+    <select id="countByParentIds" resultType="java.util.HashMap">
+        SELECT parent_id AS "parentId",
+               COUNT(*) AS "total",
+               COUNT(*) FILTER (WHERE status = 'done') AS "done"
+        FROM tasks
+        WHERE parent_id IN
+            <foreach collection="parentIds" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+          AND is_deleted = FALSE
+        GROUP BY parent_id
+    </select>
+
+</mapper>
