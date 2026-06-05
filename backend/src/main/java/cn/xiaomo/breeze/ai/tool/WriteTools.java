@@ -45,11 +45,6 @@ public class WriteTools {
     private final ObjectMapper objectMapper;
     private final ToolEventPublisher eventPublisher;
 
-    private static Long getConvId(ToolContext ctx) {
-        if (ctx == null || ctx.getContext() == null) return null;
-        Object val = ctx.getContext().get("conversationId");
-        return val instanceof Long l ? l : null;
-    }
 
     @Tool(name = "update_task", description = "更新任务字段。需提供任务ID。可选：标题、描述、状态、优先级、类型、截止日期、预估工时")
     public String updateTask(
@@ -64,12 +59,12 @@ public class WriteTools {
 
         long start = System.currentTimeMillis();
         String input = "taskId=" + taskId;
-        eventPublisher.publishStart(getConvId(toolContext), "update_task",
+        eventPublisher.publishStart(ToolContextUtils.getConvId(toolContext), "update_task",
             "正在更新任务");
         try {
             Task task = taskMapper.selectById(taskId);
             if (task == null) {
-                publishToolEvent(getConvId(toolContext), "update_task", "任务不存在", false);
+                publishToolEvent(ToolContextUtils.getConvId(toolContext), "update_task", "任务不存在", false);
                 return "错误: 任务不存在";
             }
 
@@ -98,12 +93,12 @@ public class WriteTools {
 
         long start = System.currentTimeMillis();
         String input = "taskId=" + taskId + ", assignee=" + assigneeName;
-        eventPublisher.publishStart(getConvId(toolContext), "assign_task",
+        eventPublisher.publishStart(ToolContextUtils.getConvId(toolContext), "assign_task",
             assigneeName != null ? "正在分配给 " + assigneeName : "正在取消分配");
         try {
             Task task = taskMapper.selectById(taskId);
             if (task == null) {
-                publishToolEvent(getConvId(toolContext), "assign_task", "任务不存在", false);
+                publishToolEvent(ToolContextUtils.getConvId(toolContext), "assign_task", "任务不存在", false);
                 return "错误: 任务不存在";
             }
 
@@ -114,7 +109,7 @@ public class WriteTools {
                     .eq(User::getUsername, assigneeName)
                     .or().eq(User::getDisplayName, assigneeName));
                 if (assignee == null) {
-                    publishToolEvent(getConvId(toolContext), "assign_task", "未找到成员 " + assigneeName, false);
+                    publishToolEvent(ToolContextUtils.getConvId(toolContext), "assign_task", "未找到成员 " + assigneeName, false);
                     return "错误: 未找到成员 " + assigneeName;
                 }
                 task.setAssigneeId(assignee.getId());
@@ -125,11 +120,11 @@ public class WriteTools {
                 ? "任务 " + task.getKey() + " 已分配给 " + assigneeName
                 : "任务 " + task.getKey() + " 已取消分配";
             logToolExecution("assign_task", input, result, "success", System.currentTimeMillis() - start);
-            publishToolEvent(getConvId(toolContext), "assign_task", result, true);
+            publishToolEvent(ToolContextUtils.getConvId(toolContext), "assign_task", result, true);
             return result;
         } catch (Exception e) {
             logToolExecution("assign_task", input, e.getMessage(), "error", System.currentTimeMillis() - start);
-            publishToolEvent(getConvId(toolContext), "assign_task", e.getMessage(), false);
+            publishToolEvent(ToolContextUtils.getConvId(toolContext), "assign_task", e.getMessage(), false);
             return "分配失败: " + e.getMessage();
         }
     }
@@ -143,12 +138,12 @@ public class WriteTools {
         long start = System.currentTimeMillis();
         String input = "taskId=" + taskId + ", content="
             + (content != null ? content.substring(0, Math.min(50, content.length())) : "");
-        eventPublisher.publishStart(getConvId(toolContext), "add_comment",
+        eventPublisher.publishStart(ToolContextUtils.getConvId(toolContext), "add_comment",
             "正在添加评论");
         try {
             Task task = taskMapper.selectById(taskId);
             if (task == null) {
-                publishToolEvent(getConvId(toolContext), "add_comment", "任务不存在", false);
+                publishToolEvent(ToolContextUtils.getConvId(toolContext), "add_comment", "任务不存在", false);
                 return "错误: 任务不存在";
             }
 
@@ -158,11 +153,11 @@ public class WriteTools {
 
             String result = "评论已添加到任务 " + task.getKey();
             logToolExecution("add_comment", input, result, "success", System.currentTimeMillis() - start);
-            publishToolEvent(getConvId(toolContext), "add_comment", result, true);
+            publishToolEvent(ToolContextUtils.getConvId(toolContext), "add_comment", result, true);
             return result;
         } catch (Exception e) {
             logToolExecution("add_comment", input, e.getMessage(), "error", System.currentTimeMillis() - start);
-            publishToolEvent(getConvId(toolContext), "add_comment", e.getMessage(), false);
+            publishToolEvent(ToolContextUtils.getConvId(toolContext), "add_comment", e.getMessage(), false);
             return "添加评论失败: " + e.getMessage();
         }
     }
@@ -175,12 +170,12 @@ public class WriteTools {
 
         long start = System.currentTimeMillis();
         String input = "parentTaskId=" + parentTaskId;
-        eventPublisher.publishStart(getConvId(toolContext), "create_subtasks",
+        eventPublisher.publishStart(ToolContextUtils.getConvId(toolContext), "create_subtasks",
             "正在创建子任务");
         try {
             Task parent = taskMapper.selectById(parentTaskId);
             if (parent == null) {
-                publishToolEvent(getConvId(toolContext), "create_subtasks", "父任务不存在", false);
+                publishToolEvent(ToolContextUtils.getConvId(toolContext), "create_subtasks", "父任务不存在", false);
                 return "错误: 父任务不存在";
             }
 
@@ -199,11 +194,11 @@ public class WriteTools {
 
             String result = "已创建 " + created + " 个子任务";
             logToolExecution("create_subtasks", input, result, "success", System.currentTimeMillis() - start);
-            publishToolEvent(getConvId(toolContext), "create_subtasks", result, true);
+            publishToolEvent(ToolContextUtils.getConvId(toolContext), "create_subtasks", result, true);
             return result;
         } catch (Exception e) {
             logToolExecution("create_subtasks", input, e.getMessage(), "error", System.currentTimeMillis() - start);
-            publishToolEvent(getConvId(toolContext), "create_subtasks", e.getMessage(), false);
+            publishToolEvent(ToolContextUtils.getConvId(toolContext), "create_subtasks", e.getMessage(), false);
             return "创建子任务失败: " + e.getMessage();
         }
     }
@@ -216,12 +211,12 @@ public class WriteTools {
 
         long start = System.currentTimeMillis();
         String input = "taskId=" + taskId + ", sprintId=" + sprintId;
-        eventPublisher.publishStart(getConvId(toolContext), "add_to_sprint",
+        eventPublisher.publishStart(ToolContextUtils.getConvId(toolContext), "add_to_sprint",
             "正在添加到 Sprint");
         try {
             Task task = taskMapper.selectById(taskId);
             if (task == null) {
-                publishToolEvent(getConvId(toolContext), "add_to_sprint", "任务不存在", false);
+                publishToolEvent(ToolContextUtils.getConvId(toolContext), "add_to_sprint", "任务不存在", false);
                 return "错误: 任务不存在";
             }
 
@@ -231,11 +226,11 @@ public class WriteTools {
             String result = "任务 " + task.getKey() + " 已添加到 Sprint "
                 + (sprint != null ? sprint.getName() : sprintId.toString());
             logToolExecution("add_to_sprint", input, result, "success", System.currentTimeMillis() - start);
-            publishToolEvent(getConvId(toolContext), "add_to_sprint", result, true);
+            publishToolEvent(ToolContextUtils.getConvId(toolContext), "add_to_sprint", result, true);
             return result;
         } catch (Exception e) {
             logToolExecution("add_to_sprint", input, e.getMessage(), "error", System.currentTimeMillis() - start);
-            publishToolEvent(getConvId(toolContext), "add_to_sprint", e.getMessage(), false);
+            publishToolEvent(ToolContextUtils.getConvId(toolContext), "add_to_sprint", e.getMessage(), false);
             return "添加到 Sprint 失败: " + e.getMessage();
         }
     }

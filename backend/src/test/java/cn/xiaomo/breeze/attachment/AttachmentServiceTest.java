@@ -125,8 +125,8 @@ class AttachmentServiceTest {
             List<AttachmentDTO> result = attachmentService.listByTask(TASK_ID);
 
             assertThat(result).hasSize(1);
-            assertThat(result.get(0).getFileName()).isEqualTo("doc.pdf");
-            assertThat(result.get(0).getUserName()).isEqualTo("Alice");
+            assertThat(result.getFirst().getFileName()).isEqualTo("doc.pdf");
+            assertThat(result.getFirst().getUserName()).isEqualTo("Alice");
         }
     }
 

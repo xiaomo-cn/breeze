@@ -76,7 +76,7 @@ class SearchServiceTest {
 
             assertThat(result.type()).isEqualTo("semantic");
             assertThat(result.tasks()).hasSize(1);
-            assertThat(result.tasks().get(0).getTitle()).isEqualTo("AI query result");
+            assertThat(result.tasks().getFirst().getTitle()).isEqualTo("AI query result");
         }
     }
 
@@ -125,7 +125,7 @@ class SearchServiceTest {
             List<Task> result = searchService.semanticSearch(PROJECT_ID, "dashboard", 15);
 
             assertThat(result).hasSize(1);
-            assertThat(result.get(0).getId()).isEqualTo(5L);
+            assertThat(result.getFirst().getId()).isEqualTo(5L);
         }
     }
 }

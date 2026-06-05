@@ -73,7 +73,7 @@ public class AttachmentService {
                 .orderByDesc(Attachment::getCreatedAt));
 
         List<Long> userIds = attachments.stream()
-            .map(Attachment::getUserId).distinct().collect(Collectors.toList());
+            .map(Attachment::getUserId).distinct().toList();
         final Map<Long, User> userMap = userIds.isEmpty() ? Map.of()
             : userMapper.selectBatchIds(userIds).stream()
                 .collect(Collectors.toMap(User::getId, Function.identity()));
@@ -83,7 +83,7 @@ public class AttachmentService {
             User u = userMap.get(a.getUserId());
             if (u != null) dto.setUserName(u.getDisplayName() != null ? u.getDisplayName() : u.getUsername());
             return dto;
-        }).collect(Collectors.toList());
+        }).toList();
     }
 
     public AttachmentDownload download(Long attachmentId) {

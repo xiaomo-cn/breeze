@@ -24,7 +24,7 @@ import cn.xiaomo.breeze.task.TaskMapper;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -89,9 +89,9 @@ public class AiController {
                     .orderByDesc(AiMessage::getCreatedAt)
                     .last("LIMIT 1"));
             String lastMessage = lastMsgs.isEmpty() ? null
-                : (lastMsgs.get(0).getContent().length() > 80
-                    ? lastMsgs.get(0).getContent().substring(0, 80) + "..."
-                    : lastMsgs.get(0).getContent());
+                : (lastMsgs.getFirst().getContent().length() > 80
+                    ? lastMsgs.getFirst().getContent().substring(0, 80) + "..."
+                    : lastMsgs.getFirst().getContent());
 
             Map<String, Object> m = new HashMap<>();
             m.put("id", c.getId());
@@ -102,7 +102,7 @@ public class AiController {
             m.put("createdAt", c.getCreatedAt());
             m.put("updatedAt", c.getUpdatedAt());
             return m;
-        }).collect(Collectors.toList());
+        }).toList();
 
         return ResponseEntity.ok(result);
     }

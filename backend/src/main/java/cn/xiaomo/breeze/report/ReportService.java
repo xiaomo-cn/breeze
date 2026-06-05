@@ -44,15 +44,15 @@ public class ReportService {
                 && t.getResolvedAt() != null
                 && !t.getResolvedAt().isBefore(dayStart)
                 && t.getResolvedAt().isBefore(dayEnd))
-            .collect(Collectors.toList());
+            .toList();
 
         List<Task> inProgress = allTasks.stream()
             .filter(t -> "in_progress".equals(t.getStatus()))
-            .collect(Collectors.toList());
+            .toList();
 
         List<Task> blocked = allTasks.stream()
             .filter(t -> "blocked".equals(t.getStatus()))
-            .collect(Collectors.toList());
+            .toList();
 
         int createdCount = (int) allTasks.stream()
             .filter(t -> t.getCreatedAt() != null
@@ -122,7 +122,7 @@ public class ReportService {
                 mc.setCreated(e.getValue()[1]);
                 return mc;
             })
-            .collect(Collectors.toList());
+            .toList();
 
         int newTasks = (int) allTasks.stream()
             .filter(t -> t.getCreatedAt() != null
@@ -185,7 +185,7 @@ public class ReportService {
                 mc.setCreated(e.getValue()[1]);
                 return mc;
             })
-            .collect(Collectors.toList());
+            .toList();
 
         List<BurndownPoint> burndown = computeBurndown(sprint, tasks);
 
@@ -254,7 +254,7 @@ public class ReportService {
             s.setPriority(t.getPriority());
             s.setAssigneeName(userNames.getOrDefault(t.getAssigneeId(), null));
             return s;
-        }).collect(Collectors.toList());
+        }).toList();
     }
 
     private Map<Long, String> loadUserNames(List<Task> tasks) {

@@ -313,10 +313,10 @@ class CommentServiceTest {
             PageDTO<CommentDTO> result = commentService.listByTask(TASK_ID, 1, 20);
 
             assertThat(result.items()).hasSize(2);
-            CommentDTO firstComment = result.items().get(0);
+            CommentDTO firstComment = result.items().getFirst();
             assertThat(firstComment.getId()).isEqualTo(1L);
             assertThat(firstComment.getReplies()).hasSize(1);
-            assertThat(firstComment.getReplies().get(0).getContent()).isEqualTo("Reply to c1");
+            assertThat(firstComment.getReplies().getFirst().getContent()).isEqualTo("Reply to c1");
         }
 
         @Test

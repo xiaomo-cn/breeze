@@ -52,7 +52,7 @@ public class GanttController {
             gt.setStatus(t.getStatus());
             gt.setDependencies(depMap.getOrDefault(t.getId(), Collections.emptyList()));
             return gt;
-        }).collect(Collectors.toList());
+        }).toList();
 
         GanttData data = new GanttData();
         data.setTasks(ganttTasks);

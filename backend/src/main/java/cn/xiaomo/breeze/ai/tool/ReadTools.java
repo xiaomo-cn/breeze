@@ -45,11 +45,6 @@ public class ReadTools {
     private final ToolEventPublisher eventPublisher;
     private final PromptTemplateService promptTemplateService;
 
-    private static Long getConvId(ToolContext ctx) {
-        if (ctx == null || ctx.getContext() == null) return null;
-        Object val = ctx.getContext().get("conversationId");
-        return val instanceof Long l ? l : null;
-    }
 
     @Tool(name = "get_task_detail", description = "获取任务完整信息：标题、描述、状态、优先级、指派人、评论列表")
     public String getTaskDetail(
@@ -58,12 +53,12 @@ public class ReadTools {
 
         long start = System.currentTimeMillis();
         String input = "taskId=" + taskId;
-        eventPublisher.publishStart(getConvId(toolContext), "get_task_detail",
+        eventPublisher.publishStart(ToolContextUtils.getConvId(toolContext), "get_task_detail",
             "正在获取任务详情");
         try {
             Task task = taskMapper.selectById(taskId);
             if (task == null) {
-                publishToolEvent(getConvId(toolContext), "get_task_detail", "任务不存在", false);
+                publishToolEvent(ToolContextUtils.getConvId(toolContext), "get_task_detail", "任务不存在", false);
                 return "错误: 任务不存在";
             }
 
@@ -108,11 +103,11 @@ public class ReadTools {
 
             String result = promptTemplateService.render("tools/tool-task-detail", vars);
             logToolExecution("get_task_detail", input, "ok", "success", System.currentTimeMillis() - start);
-            publishToolEvent(getConvId(toolContext), "get_task_detail", "已获取任务 " + task.getKey() + " 的详情", true);
+            publishToolEvent(ToolContextUtils.getConvId(toolContext), "get_task_detail", "已获取任务 " + task.getKey() + " 的详情", true);
             return result;
         } catch (Exception e) {
             logToolExecution("get_task_detail", input, e.getMessage(), "error", System.currentTimeMillis() - start);
-            publishToolEvent(getConvId(toolContext), "get_task_detail", e.getMessage(), false);
+            publishToolEvent(ToolContextUtils.getConvId(toolContext), "get_task_detail", e.getMessage(), false);
             return "获取任务详情失败: " + e.getMessage();
         }
     }
@@ -124,12 +119,12 @@ public class ReadTools {
 
         long start = System.currentTimeMillis();
         String input = "sprintId=" + sprintId;
-        eventPublisher.publishStart(getConvId(toolContext), "get_sprint_status",
+        eventPublisher.publishStart(ToolContextUtils.getConvId(toolContext), "get_sprint_status",
             "正在获取 Sprint 进度");
         try {
             SprintDTO sprint = sprintService.getById(sprintId);
             if (sprint == null) {
-                publishToolEvent(getConvId(toolContext), "get_sprint_status", "Sprint 不存在", false);
+                publishToolEvent(ToolContextUtils.getConvId(toolContext), "get_sprint_status", "Sprint 不存在", false);
                 return "错误: Sprint 不存在";
             }
 
@@ -149,11 +144,11 @@ public class ReadTools {
 
             String result = promptTemplateService.render("tools/tool-sprint-status", vars);
             logToolExecution("get_sprint_status", input, "ok", "success", System.currentTimeMillis() - start);
-            publishToolEvent(getConvId(toolContext), "get_sprint_status", completed + "/" + total + " 已完成", true);
+            publishToolEvent(ToolContextUtils.getConvId(toolContext), "get_sprint_status", completed + "/" + total + " 已完成", true);
             return result;
         } catch (Exception e) {
             logToolExecution("get_sprint_status", input, e.getMessage(), "error", System.currentTimeMillis() - start);
-            publishToolEvent(getConvId(toolContext), "get_sprint_status", e.getMessage(), false);
+            publishToolEvent(ToolContextUtils.getConvId(toolContext), "get_sprint_status", e.getMessage(), false);
             return "获取 Sprint 状态失败: " + e.getMessage();
         }
     }
@@ -165,7 +160,7 @@ public class ReadTools {
 
         long start = System.currentTimeMillis();
         String input = "projectId=" + projectId;
-        eventPublisher.publishStart(getConvId(toolContext), "get_user_workload",
+        eventPublisher.publishStart(ToolContextUtils.getConvId(toolContext), "get_user_workload",
             "正在获取成员工作负载");
         try {
             List<Task> activeTasks = taskMapper.selectList(
@@ -181,7 +176,7 @@ public class ReadTools {
                 .collect(Collectors.toMap(User::getId, User::getDisplayName));
 
             if (byAssignee.isEmpty()) {
-                publishToolEvent(getConvId(toolContext), "get_user_workload", "当前没有任务", true);
+                publishToolEvent(ToolContextUtils.getConvId(toolContext), "get_user_workload", "当前没有任务", true);
                 return "当前没有分配给成员的任务";
             }
 
@@ -201,11 +196,11 @@ public class ReadTools {
             String result = promptTemplateService.render("tools/tool-workload",
                 Map.of("rows", rows));
             logToolExecution("get_user_workload", input, "ok", "success", System.currentTimeMillis() - start);
-            publishToolEvent(getConvId(toolContext), "get_user_workload", byAssignee.size() + " 个成员有活跃任务", true);
+            publishToolEvent(ToolContextUtils.getConvId(toolContext), "get_user_workload", byAssignee.size() + " 个成员有活跃任务", true);
             return result;
         } catch (Exception e) {
             logToolExecution("get_user_workload", input, e.getMessage(), "error", System.currentTimeMillis() - start);
-            publishToolEvent(getConvId(toolContext), "get_user_workload", e.getMessage(), false);
+            publishToolEvent(ToolContextUtils.getConvId(toolContext), "get_user_workload", e.getMessage(), false);
             return "获取负载失败: " + e.getMessage();
         }
     }

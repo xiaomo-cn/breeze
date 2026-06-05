@@ -123,7 +123,7 @@ class TaskDependencyServiceTest {
             List<DependencyDTO> result = dependencyService.listByTask(TASK_A);
 
             assertThat(result).hasSize(1);
-            assertThat(result.get(0).getDependsOnTaskKey()).isEqualTo("T-2");
+            assertThat(result.getFirst().getDependsOnTaskKey()).isEqualTo("T-2");
         }
     }
 }

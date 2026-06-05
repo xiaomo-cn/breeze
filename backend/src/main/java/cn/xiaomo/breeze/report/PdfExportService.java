@@ -36,16 +36,12 @@ public class PdfExportService {
      */
     public byte[] exportPdf(Long projectId, String type, LocalDate date,
                             LocalDate start, LocalDate end, Long sprintId) throws Exception {
-        String html;
-        if ("daily".equals(type)) {
-            html = renderDailyHtml(projectId, date != null ? date : LocalDate.now());
-        } else if ("weekly".equals(type)) {
-            html = renderWeeklyHtml(projectId, start, end);
-        } else if ("sprint".equals(type)) {
-            html = renderSprintHtml(projectId, sprintId);
-        } else {
-            throw new IllegalArgumentException("Unknown report type: " + type);
-        }
+        String html = switch (type) {
+            case "daily" -> renderDailyHtml(projectId, date != null ? date : LocalDate.now());
+            case "weekly" -> renderWeeklyHtml(projectId, start, end);
+            case "sprint" -> renderSprintHtml(projectId, sprintId);
+            default -> throw new IllegalArgumentException("Unknown report type: " + type);
+        };
 
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             ITextRenderer renderer = new ITextRenderer();
@@ -72,37 +68,44 @@ public class PdfExportService {
         StringBuilder sb = new StringBuilder();
         sb.append('﻿'); // BOM for Excel UTF-8
 
-        if ("daily".equals(type)) {
-            DailyReportDTO dto = reportService.dailyReport(projectId,
-                date != null ? date : LocalDate.now());
-            sb.append("类型,编号,标题,状态,优先级,负责人\n");
-            for (var t : dto.getCompletedTasks()) {
-                sb.append(String.format("已完成,%s,%s,%s,%s,%s\n",
-                    t.getKey(), csvEscape(t.getTitle()), t.getStatus(), t.getPriority(),
-                    t.getAssigneeName() != null ? t.getAssigneeName() : ""));
+        switch (type) {
+            case "daily" -> {
+                DailyReportDTO dto = reportService.dailyReport(projectId,
+                    date != null ? date : LocalDate.now());
+                sb.append("类型,编号,标题,状态,优先级,负责人\n");
+                for (var t : dto.getCompletedTasks()) {
+                    sb.append(String.format("已完成,%s,%s,%s,%s,%s\n",
+                        t.getKey(), csvEscape(t.getTitle()), t.getStatus(), t.getPriority(),
+                        t.getAssigneeName() != null ? t.getAssigneeName() : ""));
+                }
+                for (var t : dto.getInProgressTasks()) {
+                    sb.append(String.format("进行中,%s,%s,%s,%s,%s\n",
+                        t.getKey(), csvEscape(t.getTitle()), t.getStatus(), t.getPriority(),
+                        t.getAssigneeName() != null ? t.getAssigneeName() : ""));
+                }
+                for (var t : dto.getBlockedTasks()) {
+                    sb.append(String.format("阻塞,%s,%s,%s,%s,%s\n",
+                        t.getKey(), csvEscape(t.getTitle()), t.getStatus(), t.getPriority(),
+                        t.getAssigneeName() != null ? t.getAssigneeName() : ""));
+                }
             }
-            for (var t : dto.getInProgressTasks()) {
-                sb.append(String.format("进行中,%s,%s,%s,%s,%s\n",
-                    t.getKey(), csvEscape(t.getTitle()), t.getStatus(), t.getPriority(),
-                    t.getAssigneeName() != null ? t.getAssigneeName() : ""));
+            case "weekly" -> {
+                WeeklyReportDTO dto = reportService.weeklyReport(projectId, start, end);
+                sb.append("成员,完成数,创建数\n");
+                for (var c : dto.getContributions()) {
+                    sb.append(String.format("%s,%d,%d\n",
+                        c.getUserName(), c.getCompleted(), c.getCreated()));
+                }
             }
-            for (var t : dto.getBlockedTasks()) {
-                sb.append(String.format("阻塞,%s,%s,%s,%s,%s\n",
-                    t.getKey(), csvEscape(t.getTitle()), t.getStatus(), t.getPriority(),
-                    t.getAssigneeName() != null ? t.getAssigneeName() : ""));
+            case "sprint" -> {
+                SprintReportDTO dto = reportService.sprintReport(projectId, sprintId);
+                sb.append("成员,完成数,创建数\n");
+                for (var c : dto.getContributions()) {
+                    sb.append(String.format("%s,%d,%d\n",
+                        c.getUserName(), c.getCompleted(), c.getCreated()));
+                }
             }
-        } else if ("weekly".equals(type)) {
-            WeeklyReportDTO dto = reportService.weeklyReport(projectId, start, end);
-            sb.append("成员,完成数,创建数\n");
-            for (var c : dto.getContributions()) {
-                sb.append(String.format("%s,%d,%d\n", c.getUserName(), c.getCompleted(), c.getCreated()));
-            }
-        } else if ("sprint".equals(type)) {
-            SprintReportDTO dto = reportService.sprintReport(projectId, sprintId);
-            sb.append("成员,完成数,创建数\n");
-            for (var c : dto.getContributions()) {
-                sb.append(String.format("%s,%d,%d\n", c.getUserName(), c.getCompleted(), c.getCreated()));
-            }
+            default -> { /* 原代码无 else 分支，保留静默忽略行为 */ }
         }
 
         return sb.toString().getBytes(StandardCharsets.UTF_8);

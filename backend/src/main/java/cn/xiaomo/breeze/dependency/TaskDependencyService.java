@@ -81,7 +81,7 @@ public class TaskDependencyService {
             dto.setType(d.getType());
             dto.setCreatedAt(d.getCreatedAt());
             return dto;
-        }).collect(Collectors.toList());
+        }).toList();
     }
 
     public void delete(Long taskId, Long dependencyId) {

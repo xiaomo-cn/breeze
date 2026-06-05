@@ -169,6 +169,8 @@ public class AiAgentService {
                 .doFinally(signalType -> {
                     // 确保工具事件通道已关闭（doOnComplete/Error/Cancel 中已调用，此处作为兜底）
                     eventPublisher.completeSession(resolvedConvId);
+                    // 清理 ThreadLocal，防止虚拟线程复用时残留上下文
+                    AiRequestContext.clear();
                 });
         });
     }
@@ -334,7 +336,7 @@ public class AiAgentService {
             if (summary == null || summary.isBlank()) return;
 
             // 存储摘要到 contextSnapshot
-            AiMessage lastOld = oldMessages.get(oldMessages.size() - 1);
+            AiMessage lastOld = oldMessages.getLast();
             Map<String, Object> newSnapshot = new HashMap<>();
             newSnapshot.put("summary", summary);
             newSnapshot.put("summarizedUpToId", lastOld.getId());

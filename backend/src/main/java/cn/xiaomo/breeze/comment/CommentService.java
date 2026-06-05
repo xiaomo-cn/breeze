@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
@@ -145,7 +145,7 @@ public class CommentService {
 
         List<Long> parentIds = result.getRecords().stream()
             .map(Comment::getId)
-            .collect(Collectors.toList());
+            .toList();
 
         LambdaQueryWrapper<Comment> replyWrapper = new LambdaQueryWrapper<Comment>()
             .in(Comment::getParentId, parentIds)
@@ -178,7 +178,7 @@ public class CommentService {
                 dto.setReplies(replyMap.getOrDefault(c.getId(), Collections.emptyList()));
                 return dto;
             })
-            .collect(Collectors.toList());
+            .toList();
 
         return PageDTO.of(dtos, result.getTotal(), page, size);
     }

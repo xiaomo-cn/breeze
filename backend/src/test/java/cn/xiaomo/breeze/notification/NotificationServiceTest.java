@@ -57,8 +57,8 @@ class NotificationServiceTest {
             PageDTO<NotificationDTO> result = notificationService.listByUser(USER_ID, 1, 20);
 
             assertThat(result.items()).hasSize(2);
-            assertThat(result.items().get(0).getType()).isEqualTo("TASK_ASSIGNED");
-            assertThat(result.items().get(0).getIsRead()).isFalse();
+            assertThat(result.items().getFirst().getType()).isEqualTo("TASK_ASSIGNED");
+            assertThat(result.items().getFirst().getIsRead()).isFalse();
             assertThat(result.items().get(1).getIsRead()).isTrue();
         }
 

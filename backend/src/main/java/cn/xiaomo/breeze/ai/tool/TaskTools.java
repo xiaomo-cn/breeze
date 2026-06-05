@@ -37,22 +37,6 @@ public class TaskTools {
     private static final Set<String> VALID_PRIORITIES = Set.of("low", "medium", "high", "critical");
     /** AI 操作使用系统用户 ID */
     private static final long AI_USER_ID = 0L;
-    /** ToolContext 中 conversationId 的 key */
-    private static final String CTX_CONVERSATION_ID = "conversationId";
-    /** ToolContext 中 userId 的 key */
-    private static final String CTX_USER_ID = "userId";
-
-    private static Long getConvId(ToolContext ctx) {
-        if (ctx == null || ctx.getContext() == null) return null;
-        Object val = ctx.getContext().get(CTX_CONVERSATION_ID);
-        return val instanceof Long l ? l : null;
-    }
-
-    private static Long getUserIdFromCtx(ToolContext ctx) {
-        if (ctx == null || ctx.getContext() == null) return null;
-        Object val = ctx.getContext().get(CTX_USER_ID);
-        return val instanceof Long l ? l : null;
-    }
 
     private final TaskService taskService;
     private final TaskMapper taskMapper;
@@ -79,20 +63,20 @@ public class TaskTools {
         long start = System.currentTimeMillis();
         String inputSummary = "title=" + title + ", projectId=" + projectId;
         // 发布工具开始事件
-        eventPublisher.publishStart(getConvId(toolContext), "create_task",
+        eventPublisher.publishStart(ToolContextUtils.getConvId(toolContext), "create_task",
             "正在创建任务: " + title);
         // 参数校验
         if (title == null || title.isBlank()) {
-            return error(getConvId(toolContext), "create_task", inputSummary, "标题不能为空", start);
+            return error(ToolContextUtils.getConvId(toolContext), "create_task", inputSummary, "标题不能为空", start);
         }
         String resolvedType = (type != null && !type.isBlank()) ? type.toLowerCase() : "task";
         if (!VALID_TYPES.contains(resolvedType)) {
-            return error(getConvId(toolContext), "create_task", inputSummary,
+            return error(ToolContextUtils.getConvId(toolContext), "create_task", inputSummary,
                 "无效的类型 '" + type + "'，有效值: " + String.join(", ", VALID_TYPES), start);
         }
         String resolvedPriority = (priority != null && !priority.isBlank()) ? priority.toLowerCase() : "medium";
         if (!VALID_PRIORITIES.contains(resolvedPriority)) {
-            return error(getConvId(toolContext), "create_task", inputSummary,
+            return error(ToolContextUtils.getConvId(toolContext), "create_task", inputSummary,
                 "无效的优先级 '" + priority + "'，有效值: " + String.join(", ", VALID_PRIORITIES), start);
         }
 
@@ -107,7 +91,7 @@ public class TaskTools {
                 .eq(User::getUsername, assigneeName)
                 .or().eq(User::getDisplayName, assigneeName));
             if (assignee == null) {
-                return error(getConvId(toolContext), "create_task", inputSummary,
+                return error(ToolContextUtils.getConvId(toolContext), "create_task", inputSummary,
                     "未找到成员 '" + assigneeName + "'，请使用 list_members 查看项目成员", start);
             }
             task.setAssigneeId(assignee.getId());
@@ -117,14 +101,14 @@ public class TaskTools {
             try {
                 task.setDueDate(LocalDate.parse(dueDate));
             } catch (DateTimeParseException e) {
-                return error(getConvId(toolContext), "create_task", inputSummary,
+                return error(ToolContextUtils.getConvId(toolContext), "create_task", inputSummary,
                     "日期格式错误 '" + dueDate + "'，请使用 yyyy-MM-dd 格式", start);
             }
         }
 
         // 写操作默认需要确认（ToolContext 不传递此配置，始终为 true）
         if (true) {
-            return requireConfirmation(getConvId(toolContext), projectId, title, task, inputSummary, start);
+            return requireConfirmation(ToolContextUtils.getConvId(toolContext), projectId, title, task, inputSummary, start);
         }
 
         try {
@@ -136,10 +120,10 @@ public class TaskTools {
             logToolExecution("create_task", inputSummary,
                 "taskId=" + created.getId() + ", key=" + created.getKey(), "success",
                 System.currentTimeMillis() - start);
-            publishToolEvent(getConvId(toolContext), "create_task", "任务 " + created.getKey() + " 已创建", true);
+            publishToolEvent(ToolContextUtils.getConvId(toolContext), "create_task", "任务 " + created.getKey() + " 已创建", true);
             return result;
         } catch (Exception e) {
-            return error(getConvId(toolContext), "create_task", inputSummary, e.getMessage(), start);
+            return error(ToolContextUtils.getConvId(toolContext), "create_task", inputSummary, e.getMessage(), start);
         }
     }
 
@@ -153,7 +137,7 @@ public class TaskTools {
 
         long start = System.currentTimeMillis();
         String inputSummary = "projectId=" + projectId + ", keyword=" + keyword + ", status=" + status;
-        eventPublisher.publishStart(getConvId(toolContext), "search_tasks",
+        eventPublisher.publishStart(ToolContextUtils.getConvId(toolContext), "search_tasks",
             keyword != null ? "正在搜索: " + keyword : "正在搜索任务");
 
         try {
@@ -197,7 +181,7 @@ public class TaskTools {
             if (result.isEmpty()) {
                 logToolExecution("search_tasks", inputSummary, "no results", "success",
                     System.currentTimeMillis() - start);
-                publishToolEvent(getConvId(toolContext), "search_tasks", "未找到匹配的任务", true);
+                publishToolEvent(ToolContextUtils.getConvId(toolContext), "search_tasks", "未找到匹配的任务", true);
                 return "未找到匹配的任务";
             }
 
@@ -219,10 +203,10 @@ public class TaskTools {
             logToolExecution("search_tasks", inputSummary,
                 "found=" + result.size() + " tasks", "success",
                 System.currentTimeMillis() - start);
-            publishToolEvent(getConvId(toolContext), "search_tasks", "找到 " + result.size() + " 个任务", true);
+            publishToolEvent(ToolContextUtils.getConvId(toolContext), "search_tasks", "找到 " + result.size() + " 个任务", true);
             return output;
         } catch (Exception e) {
-            return error(getConvId(toolContext), "search_tasks", inputSummary, e.getMessage(), start);
+            return error(ToolContextUtils.getConvId(toolContext), "search_tasks", inputSummary, e.getMessage(), start);
         }
     }
 
@@ -233,7 +217,7 @@ public class TaskTools {
 
         long start = System.currentTimeMillis();
         String inputSummary = "projectId=" + projectId;
-        eventPublisher.publishStart(getConvId(toolContext), "list_members",
+        eventPublisher.publishStart(ToolContextUtils.getConvId(toolContext), "list_members",
             "正在获取项目成员列表");
 
         try {
@@ -248,7 +232,7 @@ public class TaskTools {
             if (userIds.isEmpty()) {
                 logToolExecution("list_members", inputSummary, "no members", "success",
                     System.currentTimeMillis() - start);
-                publishToolEvent(getConvId(toolContext), "list_members", "该项目暂无成员", true);
+                publishToolEvent(ToolContextUtils.getConvId(toolContext), "list_members", "该项目暂无成员", true);
                 return "该项目暂无成员";
             }
 
@@ -268,10 +252,10 @@ public class TaskTools {
             logToolExecution("list_members", inputSummary,
                 "found=" + users.size() + " members", "success",
                 System.currentTimeMillis() - start);
-            publishToolEvent(getConvId(toolContext), "list_members", "获取到 " + users.size() + " 个成员", true);
+            publishToolEvent(ToolContextUtils.getConvId(toolContext), "list_members", "获取到 " + users.size() + " 个成员", true);
             return result;
         } catch (Exception e) {
-            return error(getConvId(toolContext), "list_members", inputSummary, e.getMessage(), start);
+            return error(ToolContextUtils.getConvId(toolContext), "list_members", inputSummary, e.getMessage(), start);
         }
     }
 

@@ -107,7 +107,7 @@ public class TaskService {
         List<Long> filtered = collaboratorIds.stream()
             .filter(id -> !id.equals(assigneeId))
             .distinct()
-            .collect(Collectors.toList());
+            .toList();
         // 先删除旧的
         taskCollaboratorMapper.delete(new LambdaQueryWrapper<TaskCollaborator>()
             .eq(TaskCollaborator::getTaskId, taskId));
@@ -128,7 +128,7 @@ public class TaskService {
                     .eq(TaskCollaborator::getTaskId, taskId))
             .stream()
             .map(TaskCollaborator::getUserId)
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /** 通知协作人 */
@@ -203,14 +203,11 @@ public class TaskService {
 
         // 排序
         boolean asc = !"desc".equalsIgnoreCase(sortDir);
-        if ("priority".equals(sortBy)) {
-            wrapper.orderBy(true, asc, Task::getPriority);
-        } else if ("dueDate".equals(sortBy)) {
-            wrapper.orderBy(true, asc, Task::getDueDate);
-        } else if ("createdAt".equals(sortBy)) {
-            wrapper.orderBy(true, asc, Task::getCreatedAt);
-        } else {
-            wrapper.orderByAsc(Task::getSortOrder);
+        switch (sortBy != null ? sortBy : "") {
+            case "priority" -> wrapper.orderBy(true, asc, Task::getPriority);
+            case "dueDate" -> wrapper.orderBy(true, asc, Task::getDueDate);
+            case "createdAt" -> wrapper.orderBy(true, asc, Task::getCreatedAt);
+            default -> wrapper.orderByAsc(Task::getSortOrder);
         }
 
         IPage<Task> result = taskMapper.selectPage(Page.of(page, size), wrapper);
@@ -359,7 +356,7 @@ public class TaskService {
                     .eq(ProjectMember::getProjectId, projectId))
             .stream()
             .map(ProjectMember::getUserId)
-            .collect(Collectors.toList());
+            .toList();
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("id", task.getId());
         data.put("key", task.getKey());

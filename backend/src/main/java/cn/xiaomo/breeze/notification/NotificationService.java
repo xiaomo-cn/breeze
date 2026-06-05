@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import cn.xiaomo.breeze.common.PageDTO;
 import cn.xiaomo.breeze.notification.dto.NotificationDTO;
 import java.util.List;
-import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -25,7 +25,7 @@ public class NotificationService {
         Page<Notification> result = notificationMapper.selectPage(Page.of(page, size), wrapper);
         List<NotificationDTO> dtos = result.getRecords().stream()
             .map(this::toDTO)
-            .collect(Collectors.toList());
+            .toList();
         return PageDTO.of(dtos, result.getTotal(), page, size);
     }
 

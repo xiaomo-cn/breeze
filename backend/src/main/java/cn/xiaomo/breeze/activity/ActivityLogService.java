@@ -39,7 +39,7 @@ public class ActivityLogService {
                     .eq(ProjectMember::getUserId, userId))
             .stream()
             .map(ProjectMember::getProjectId)
-            .collect(Collectors.toList());
+            .toList();
 
         if (projectIds.isEmpty()) {
             return PageDTO.of(List.of(), 0L, page, size);
@@ -57,7 +57,7 @@ public class ActivityLogService {
         List<Long> userIds = result.getRecords().stream()
             .map(ActivityLog::getUserId)
             .distinct()
-            .collect(Collectors.toList());
+            .toList();
 
         final Map<Long, User> userMap = userIds.isEmpty() ? Map.of()
             : userMapper.selectBatchIds(userIds).stream()
@@ -82,7 +82,7 @@ public class ActivityLogService {
                 }
                 return dto;
             })
-            .collect(Collectors.toList());
+            .toList();
 
         return PageDTO.of(dtos, result.getTotal(), page, size);
     }

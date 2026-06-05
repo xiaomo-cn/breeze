@@ -69,7 +69,7 @@ public class SprintService {
             dto.setCompletedTaskCount((int) sprintTasks.stream()
                 .filter(t -> "done".equals(t.getStatus())).count());
             return dto;
-        }).collect(Collectors.toList());
+        }).toList();
     }
 
     public SprintDTO getById(Long sprintId) {

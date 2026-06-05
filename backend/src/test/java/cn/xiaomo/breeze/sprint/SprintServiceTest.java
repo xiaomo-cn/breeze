@@ -96,8 +96,8 @@ class SprintServiceTest {
             List<SprintDTO> result = sprintService.listByProject(PROJECT_ID);
 
             assertThat(result).hasSize(1);
-            assertThat(result.get(0).getTaskCount()).isEqualTo(2);
-            assertThat(result.get(0).getCompletedTaskCount()).isEqualTo(1);
+            assertThat(result.getFirst().getTaskCount()).isEqualTo(2);
+            assertThat(result.getFirst().getCompletedTaskCount()).isEqualTo(1);
         }
 
         @Test
@@ -273,7 +273,7 @@ class SprintServiceTest {
             assertThat(day3.getIdealRemaining()).isPositive();
             assertThat(day3.getActualRemaining()).isGreaterThanOrEqualTo(0);
             // Day 1 (start): ideal = 13, actual = 13 (or less if resolved same day)
-            assertThat(points.get(0).getIdealRemaining()).isEqualTo(13);
+            assertThat(points.getFirst().getIdealRemaining()).isEqualTo(13);
         }
 
         @Test

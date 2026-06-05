@@ -1,4 +1,8 @@
 spring:
+  threads:
+    virtual:
+      enabled: true
+
   datasource:
     url: jdbc:postgresql://localhost:5432/breeze
     username: breeze

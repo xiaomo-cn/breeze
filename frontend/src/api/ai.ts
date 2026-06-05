@@ -65,6 +65,27 @@ export async function streamChat(
     const decoder = new TextDecoder();
     let buffer = '';
     let currentEvent = '';
+    /** SSE 单事件多 data 行缓冲（按规范用 \n 连接） */
+    let dataBuffer: string[] = [];
+
+    /** 刷新缓冲的 data 行并分发到对应回调 */
+    const flushDataBuffer = () => {
+      if (dataBuffer.length === 0) return;
+      const joined = dataBuffer.join('\n');
+      dataBuffer = [];
+
+      if (currentEvent === 'tool_start' || currentEvent === 'tool_end' || currentEvent === 'tool_confirmation') {
+        try {
+          const parsed: ToolEvent = JSON.parse(joined);
+          parsed.type = currentEvent;
+          onToolEvent(parsed);
+        } catch {
+          onChunk(joined);
+        }
+      } else {
+        onChunk(joined);
+      }
+    };
 
     while (true) {
       // 检查中止信号
@@ -91,6 +112,8 @@ export async function streamChat(
       }
 
       if (done || !value) {
+        // 流结束前刷新剩余缓冲数据
+        flushDataBuffer();
         onStatusChange?.('done');
         onDone();
         break;
@@ -101,25 +124,24 @@ export async function streamChat(
       buffer = lines.pop() || '';
 
       for (const line of lines) {
+        // SSE 规范：空行表示事件结束，刷新缓冲
+        if (line === '') {
+          flushDataBuffer();
+          currentEvent = '';
+          continue;
+        }
+
         if (line.startsWith('event:')) {
+          // 事件类型切换前刷新上个事件的缓冲
+          flushDataBuffer();
           currentEvent = line.slice(6).trim();
         } else if (line.startsWith('data:')) {
-          const data = line.slice(5).trim();
-          if (!data) continue;
-
-          if (currentEvent === 'tool_start' || currentEvent === 'tool_end' || currentEvent === 'tool_confirmation') {
-            try {
-              const parsed: ToolEvent = JSON.parse(data);
-              parsed.type = currentEvent;
-              onToolEvent(parsed);
-            } catch {
-              onChunk(data);
-            }
-          } else {
-            onChunk(data);
-          }
-          currentEvent = '';
+          // SSE 规范：data: 后可有一个可选空格
+          let data = line.slice(5);
+          if (data.startsWith(' ')) data = data.slice(1);
+          dataBuffer.push(data);
         }
+        // 忽略 id:、retry: 等其他字段
       }
     }
   } catch (err: any) {
@@ -208,10 +230,17 @@ export async function streamBreakdown(
 
   const decoder = new TextDecoder();
   let buffer = '';
+  /** SSE 单事件多 data 行缓冲（按规范用 \n 连接） */
+  let dataBuffer: string[] = [];
 
   while (true) {
     const { done, value } = await reader.read();
     if (done) {
+      // 流结束前刷新剩余缓冲数据
+      if (dataBuffer.length > 0) {
+        onChunk(dataBuffer.join('\n'));
+        dataBuffer = [];
+      }
       onDone();
       break;
     }
@@ -221,11 +250,20 @@ export async function streamBreakdown(
     buffer = lines.pop() || '';
 
     for (const line of lines) {
-      if (line.startsWith('data:')) {
-        const text = line.slice(5).trim();
-        if (text) {
-          onChunk(text);
+      // SSE 规范：空行表示事件结束，刷新缓冲
+      if (line === '') {
+        if (dataBuffer.length > 0) {
+          onChunk(dataBuffer.join('\n'));
+          dataBuffer = [];
         }
+        continue;
+      }
+
+      if (line.startsWith('data:')) {
+        // SSE 规范：data: 后可有一个可选空格
+        let text = line.slice(5);
+        if (text.startsWith(' ')) text = text.slice(1);
+        dataBuffer.push(text);
       }
     }
   }

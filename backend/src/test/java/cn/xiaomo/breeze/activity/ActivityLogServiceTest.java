@@ -75,8 +75,8 @@ class ActivityLogServiceTest {
             PageDTO<ActivityLogDTO> result = activityLogService.listByProject(PROJECT_ID, 1, 20);
 
             assertThat(result.items()).hasSize(1);
-            assertThat(result.items().get(0).getActionType()).isEqualTo("created");
-            assertThat(result.items().get(0).getDisplayName()).isEqualTo("Alice");
+            assertThat(result.items().getFirst().getActionType()).isEqualTo("created");
+            assertThat(result.items().getFirst().getDisplayName()).isEqualTo("Alice");
         }
 
         @Test
@@ -102,7 +102,7 @@ class ActivityLogServiceTest {
 
             PageDTO<ActivityLogDTO> result = activityLogService.listByProject(PROJECT_ID, 1, 20);
 
-            assertThat(result.items().get(0).getDetails()).isNull();
+            assertThat(result.items().getFirst().getDetails()).isNull();
         }
     }
 
@@ -128,7 +128,7 @@ class ActivityLogServiceTest {
             PageDTO<ActivityLogDTO> result = activityLogService.listForUser(USER_ID, 1, 20);
 
             assertThat(result.items()).hasSize(1);
-            assertThat(result.items().get(0).getDisplayName()).isEqualTo("Charlie");
+            assertThat(result.items().getFirst().getDisplayName()).isEqualTo("Charlie");
         }
 
         @Test

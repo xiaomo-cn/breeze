@@ -84,7 +84,7 @@ public class NlQueryService {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(safeSql);
 
         List<String> columns = rows.isEmpty() ? List.of()
-            : new ArrayList<>(rows.get(0).keySet());
+            : new ArrayList<>(rows.getFirst().keySet());
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("columns", columns);
