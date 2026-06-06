@@ -1,0 +1,13 @@
+# 强制 shell 脚本始终使用 LF 换行符，避免 Windows autocrlf 转换导致 bash 无法解析
+*.sh text eol=lf
+
+# 其他重要文本文件也统一使用 LF
+*.yml text eol=lf
+*.yaml text eol=lf
+Dockerfile text eol=lf
+*.env.example text eol=lf
+
+# Windows 批处理文件必须使用 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
