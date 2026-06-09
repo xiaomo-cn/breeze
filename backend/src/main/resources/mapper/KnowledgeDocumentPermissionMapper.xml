@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.xiaomo.breeze.knowledge.mapper.KnowledgeDocumentPermissionMapper">
+
+    <!-- 查询文档的所有权限 -->
+    <select id="selectByDocumentId" resultType="cn.xiaomo.breeze.knowledge.entity.KnowledgeDocumentPermission">
+        SELECT * FROM knowledge_document_permissions
+        WHERE document_id = #{documentId,jdbcType=BIGINT}
+    </select>
+
+    <!-- 查询用户对某个文档的权限 -->
+    <select id="selectByDocAndUser" resultType="cn.xiaomo.breeze.knowledge.entity.KnowledgeDocumentPermission">
+        SELECT * FROM knowledge_document_permissions
+        WHERE document_id = #{documentId,jdbcType=BIGINT}
+          AND user_id = #{userId,jdbcType=BIGINT}
+        LIMIT 1
+    </select>
+
+</mapper>

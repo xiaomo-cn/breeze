@@ -9,6 +9,7 @@ import {
   BarChartOutlined,
   ScheduleOutlined,
   TeamOutlined,
+  BookOutlined,
 } from '@ant-design/icons';
 import { listProjects } from '../../api/projects';
 import { useAuthStore } from '../../stores/authStore';
@@ -40,6 +41,11 @@ export default function Sidebar({ collapsed, onCollapse }: Props) {
       key: '/',
       icon: <DashboardOutlined style={{ color: '#3b82f6' }} />,
       label: <span style={{ fontWeight: 600, color: '#3b82f6' }}>仪表盘</span>,
+    },
+    {
+      key: '/knowledge',
+      icon: <BookOutlined style={{ color: '#10b981' }} />,
+      label: <span style={{ fontWeight: 600, color: '#10b981' }}>知识库</span>,
     },
     ...(role === 'system_admin'
       ? [{
@@ -89,6 +95,12 @@ export default function Sidebar({ collapsed, onCollapse }: Props) {
   const items = [...baseItems, ...projectItems];
 
   const getSelectedKeys = () => {
+    if (location.pathname.startsWith('/knowledge')) {
+      return ['/knowledge'];
+    }
+    if (location.pathname.startsWith('/admin/users')) {
+      return ['/admin/users'];
+    }
     if (currentProjectId && location.pathname.includes('/settings')) {
       return [`/projects/${currentProjectId}/settings`];
     }

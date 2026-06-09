@@ -55,3 +55,5 @@ docker-compose.override.yml
 # ===== 测试覆盖率 =====
 coverage/
 .nyc_output/
+.gstack/
+/preview/

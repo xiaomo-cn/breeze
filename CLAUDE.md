@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Breeze 是一个带 AI Agent 的团队项目管理系统（类 Jira/Linear），支持看板管理、Sprint 规划、甘特图、AI 智能助手。
 
 **技术栈：**
-- 后端：Spring Boot 3.3、MyBatis-Plus 3.5、Spring AI 1.0.0-M6、PostgreSQL 16、Redis 7
+- 后端：Spring Boot 3.3、MyBatis-Plus 3.5、Spring AI 1.1.7、PostgreSQL 16、Redis 7
 - 前端：React 18 + TypeScript、Vite 5、Ant Design 5、Tailwind CSS、Zustand、@dnd-kit
 - AI：DeepSeek V4 Pro，通过 Spring AI OpenAI starter 接入（OpenAI 兼容 API）
 
@@ -35,6 +35,7 @@ npm run build                        # 生产构建
 export DEEPSEEK_API_KEY=sk-...       # AI 功能必需
 export JWT_SECRET=...                # 可选，有开发默认值
 export EMBEDDING_API_KEY=sk-...      # 语义搜索必需（OpenAI text-embedding-3-small）
+export DASHSCOPE_API_KEY=sk-...     # 知识库向量化必需（阿里百炼 text-embedding-v4，兼容 OpenAI API）
 ```
 
 ## 基础设施
@@ -66,11 +67,14 @@ cn.xiaomo.breeze
 ├── activity/        # 操作审计日志
 ├── event/           # SSE 实时事件（SseEmitterRegistry）
 ├── config/          # 存储配置、缓存配置
-└── ai/              # Spring AI ChatClient、12 个 @Tool 方法、SSE 流式、限流、RAG、拆解/排期/风控/报告
+├── ai/              # Spring AI ChatClient、12 个 @Tool 方法、SSE 流式、限流、RAG、拆解/排期/风控/报告
+└── knowledge/       # 知识库模块（文档管理、Tika 解析、向量化、RAG 问答）
 
 **关键设计决策：**
 - ORM：MyBatis-Plus（`BaseMapper<T>` + `LambdaQueryWrapper`）。复杂查询通过 XML Mapper（如搜索）。
-- AI：Spring AI OpenAI starter 指向 `https://api.deepseek.com`。Embedding 使用独立 API（OpenAI `text-embedding-3-small`），异步更新到 pgvector。
+- AI：Spring AI OpenAI starter 指向 `https://api.deepseek.com`。Embedding 使用独立 API：
+  - 任务搜索：OpenAI `text-embedding-3-small`，异步更新到 pgvector
+  - 知识库：阿里百炼 `text-embedding-v4`（兼容 OpenAI API，1024 维），独立 `KnowledgeAiConfig` 配置
 - **无数据库外键约束**：参照完整性在应用层管理，避免 DDL 耦合和性能问题。
 - JSONB 列使用自定义 `JsonbTypeHandler`——带 JSONB/JSON 字段的实体需要 `@TableName(autoResultMap = true)` + `@TableField(typeHandler = JsonbTypeHandler.class)`。
 - 任务编号：Phase 1 使用 `T-{Redis INCR}`，后续改为 `{PROJECT_KEY}-{seq}`。
@@ -98,6 +102,46 @@ POST /api/v1/ai/chat (SSE)
 
 **限流：** `RateLimitFilter` — 每用户每分钟 20 条消息，基于 Redis INCR + TTL。
 
+### 知识库模块
+
+独立的组织级知识库，通过侧边栏「知识库」入口访问，与项目管理模块解耦。
+
+**数据模型：**
+- `knowledge_documents` — 文档/文件夹（`parent_folder_id` 自引用，无限层级），SHA-256 去重，软删除
+- `knowledge_tags` — 全局标签（多对多关联文档）
+- `knowledge_document_permissions` — 文档级权限（read / manage），子项继承父文件夹权限
+- `knowledge_conversations` / `knowledge_messages` — AI 对话历史，与项目 AI 助手独立
+
+**文档摄入流程：**
+```
+上传文件
+  → SHA-256 去重检查
+  → FileStorageService 存储（local/S3）
+  → DocumentParser（TikaDocumentParser）提取文本
+  → 全文存入 knowledge_documents.extracted_text
+  → TokenTextSplitter / ParagraphSplitter 按文件类型自适应分块
+  → 阿里百炼 text-embedding-v4 向量化（1024 维）
+  → 写入 vector_store（metadata.doc_type = "knowledge_document"）
+```
+
+**知识库问答流程：**
+```
+POST /api/v1/knowledge/chat (SSE)
+  → KnowledgeRetrievalService.retrieve()
+    → 向量相似度搜索（doc_type 过滤）
+    → 按 doc_id 聚合 + 权限过滤 + 相关性阈值（cosine ≥ 0.3）
+    → 返回 topK=5 篇文档
+  → KnowledgeChatService.streamChat()
+    → 从 DB 读取 extracted_text（不重复解析文件）
+    → 按 token 预算动态截断（总预算 32K）
+    → 构建 RAG Prompt → DeepSeek ChatClient → SSE 流式回答
+```
+
+**关键配置（application.yml）：**
+- `spring.ai.knowledge.embedding` — 独立的 embedding 配置（阿里百炼）
+- `spring.ai.knowledge.splitter` — 分块参数（chunk-size=500, overlap=50, max-chunks=100）
+- 知识库问答复用项目主 ChatClient（DeepSeek），不单独配置
+
 ### 搜索架构
 
 ```
@@ -123,8 +167,9 @@ Flyway 迁移脚本在 `backend/src/main/resources/db/migration/`：
 
 | 版本 | 内容 |
 |------|------|
-| V1 | 核心表：users、projects、project_members、tasks、task_embeddings、ai_conversations、ai_messages |
-| V2 | 业务表：task_comments、task_attachments、task_tags、task_dependencies、sprints、kanban_boards、kanban_columns、notifications、ai_tool_executions、activity_log |
+| V1 | 核心表：users、projects、project_members、tasks、task_embeddings、ai_conversations、ai_messages、vector_store |
+| V2 | 知识库表：knowledge_documents、knowledge_tags、knowledge_document_tags、knowledge_document_permissions、knowledge_conversations、knowledge_messages |
+| V2_1 | 知识库优化：knowledge_documents 新增 extracted_text 列 |
 | V3 | 全文搜索：tsvector 列 + GIN 索引 + 触发器 + HNSW 索引 |
 | V5 | 业务索引：复合索引覆盖常见查询 |
 | V6 | task_embeddings 唯一约束（支持 upsert） |
@@ -138,6 +183,7 @@ openspec/changes/
 ├── phase-0-quick-prototype/     # 已完成（23/27 任务）
 ├── phase-1-backend-mvp/         # 已完成（26/26）
 ├── phase-2-frontend-shell/      # 已完成
+├── knowledge-base/              # 已完成（43/49 任务）
 ├── phase-3-collaboration/       # 待开始
 ├── phase-4-reports-gantt/       # 待开始
 ├── phase-5-ai-agent-core/       # 待开始
@@ -149,7 +195,10 @@ openspec/changes/
 
 ## Spring AI 版本注意事项
 
-Spring AI 1.0.0-M6 来自 Spring Milestones 仓库，与 GA 版本的 API 差异：
-- `Document.getText()` 而非 `getContent()`
-- `PgVectorStore.builder(JdbcTemplate, EmbeddingModel)` 而非 `(DataSource, EmbeddingModel)`
-- 使用 `SearchRequest.builder()` 模式
+当前使用 Spring AI 1.1.7（Maven Central，无需额外仓库），关键 API：
+- `TokenTextSplitter` 在 `org.springframework.ai.transformer.splitter` 包下
+- `PgVectorStore.builder(JdbcTemplate, EmbeddingModel)` 构造函数
+- `SearchRequest.builder()` 模式进行向量检索
+- `Document.getText()` 获取文档文本内容
+- 知识库模块使用独立的 `OpenAiEmbeddingModel` Bean（`@Qualifier("knowledgeEmbeddingModel")`），指向阿里百炼 text-embedding-v4
+- `ChatClient` 通过 Spring AI 自动配置，主项目和知识库共享同一个 DeepSeek ChatClient

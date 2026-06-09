@@ -6,7 +6,6 @@ import cn.xiaomo.breeze.ai.tool.WriteTools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -20,17 +19,10 @@ public class AiConfig {
                                   TaskTools taskTools,
                                   ReadTools readTools,
                                   WriteTools writeTools) {
-        // 使用 MethodToolCallbackProvider 显式扫描 @Tool 方法，
-        // 避免 CGLIB 代理导致的注解丢失问题（Spring AI #3485）
-        var toolProvider = MethodToolCallbackProvider.builder()
-            .toolObjects(taskTools, readTools, writeTools)
-            .build();
-
-        log.info("ChatClient configured with {} tools from TaskTools, ReadTools, WriteTools",
-            toolProvider.getToolCallbacks().length);
+        log.info("ChatClient configured with tools from TaskTools, ReadTools, WriteTools");
 
         return builder
-            .defaultTools(toolProvider)
+            .defaultTools(taskTools, readTools, writeTools)
             .build();
     }
 }

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.xiaomo.breeze.knowledge.mapper.KnowledgeDocumentMapper">
+
+    <!-- 查询指定文件夹下的子项（含子项数量） -->
+    <select id="selectByParentFolder" resultType="cn.xiaomo.breeze.knowledge.entity.KnowledgeDocument">
+        SELECT d.*,
+               (SELECT COUNT(*) FROM knowledge_documents c
+                WHERE c.parent_folder_id = d.id AND c.is_deleted = FALSE) AS child_count
+        FROM knowledge_documents d
+        WHERE d.is_deleted = FALSE
+        <choose>
+            <when test="parentFolderId != null">
+                AND d.parent_folder_id = #{parentFolderId,jdbcType=BIGINT}
+            </when>
+            <otherwise>
+                AND d.parent_folder_id IS NULL
+            </otherwise>
+        </choose>
+        ORDER BY
+          CASE WHEN d.file_type = 'folder' THEN 0 ELSE 1 END,
+          d.updated_at DESC
+    </select>
+
+    <!-- 递归搜索当前目录及所有子目录 -->
+    <select id="searchByTitle" resultType="cn.xiaomo.breeze.knowledge.entity.KnowledgeDocument">
+        WITH RECURSIVE folder_tree AS (
+            SELECT id FROM knowledge_documents
+            WHERE is_deleted = FALSE
+            <choose>
+                <when test="parentFolderId != null">
+                    AND id = #{parentFolderId,jdbcType=BIGINT}
+                </when>
+                <otherwise>
+                    AND parent_folder_id IS NULL
+                </otherwise>
+            </choose>
+            UNION ALL
+            SELECT kd.id FROM knowledge_documents kd
+            INNER JOIN folder_tree ft ON kd.parent_folder_id = ft.id
+            WHERE kd.is_deleted = FALSE
+        )
+        SELECT DISTINCT kd.* FROM knowledge_documents kd
+        INNER JOIN folder_tree ft ON kd.parent_folder_id = ft.id OR kd.id = ft.id
+        WHERE kd.file_type != 'folder'
+          AND kd.is_deleted = FALSE
+          AND kd.title ILIKE CONCAT('%', #{keyword,jdbcType=VARCHAR}, '%')
+        ORDER BY kd.updated_at DESC
+    </select>
+
+    <!-- 查询完整文件夹树 -->
+    <select id="selectFolderTree" resultType="cn.xiaomo.breeze.knowledge.entity.KnowledgeDocument">
+        SELECT * FROM knowledge_documents
+        WHERE is_deleted = FALSE
+          AND (
+              file_type = 'folder'
+              OR parent_folder_id IS NOT NULL
+              OR (parent_folder_id IS NULL AND file_type != 'folder')
+          )
+        ORDER BY
+          COALESCE(parent_folder_id, 0),
+          CASE WHEN file_type = 'folder' THEN 0 ELSE 1 END,
+          title
+    </select>
+
+    <!-- 按文件哈希查找 -->
+    <select id="selectByFileHash" resultType="cn.xiaomo.breeze.knowledge.entity.KnowledgeDocument">
+        SELECT * FROM knowledge_documents
+        WHERE file_hash = #{fileHash,jdbcType=VARCHAR}
+          AND is_deleted = FALSE
+        LIMIT 1
+    </select>
+
+</mapper>

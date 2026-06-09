@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.xiaomo.breeze.knowledge.mapper.KnowledgeTagMapper">
+
+    <!-- 按名称模糊查找 -->
+    <select id="searchByName" resultType="cn.xiaomo.breeze.knowledge.entity.KnowledgeTag">
+        SELECT * FROM knowledge_tags
+        WHERE name ILIKE CONCAT('%', #{keyword,jdbcType=VARCHAR}, '%')
+        ORDER BY name
+        LIMIT 20
+    </select>
+
+    <!-- 查找文档的所有标签 -->
+    <select id="selectByDocumentId" resultType="cn.xiaomo.breeze.knowledge.entity.KnowledgeTag">
+        SELECT kt.* FROM knowledge_tags kt
+        INNER JOIN knowledge_document_tags kdt ON kt.id = kdt.tag_id
+        WHERE kdt.document_id = #{documentId,jdbcType=BIGINT}
+        ORDER BY kt.name
+    </select>
+
+</mapper>

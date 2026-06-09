@@ -12,3 +12,4 @@ export type { ActivityLogEntry } from './activity';
 export type { TaskSummary, DailyReport, DailyPoint, MemberContribution, WeeklyReport, SprintReport } from './report';
 export type { GanttTask, GanttData } from './gantt';
 export type { TaskDependency as Dependency } from './dependency';
+export type { KnowledgeDocument, KnowledgeTag, KnowledgeConversation, KnowledgeMessage, ReferencedDoc } from './knowledge';

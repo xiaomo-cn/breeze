@@ -15,6 +15,7 @@ const GanttPage = lazy(() => import('../pages/GanttPage'));
 const ProfilePage = lazy(() => import('../pages/ProfilePage'));
 const ChangePasswordPage = lazy(() => import('../pages/ChangePasswordPage'));
 const AdminUsersPage = lazy(() => import('../pages/AdminUsersPage'));
+const KnowledgeBasePage = lazy(() => import('../pages/KnowledgeBasePage'));
 
 const PageLoader = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -64,6 +65,7 @@ export default function AppRoutes() {
         <Route path="projects/:id/reports" element={<Suspense fallback={<PageLoader />}><ReportPage /></Suspense>} />
         <Route path="projects/:id/gantt" element={<Suspense fallback={<PageLoader />}><GanttPage /></Suspense>} />
         <Route path="profile" element={<Suspense fallback={<PageLoader />}><ProfilePage /></Suspense>} />
+        <Route path="knowledge" element={<Suspense fallback={<PageLoader />}><KnowledgeBasePage /></Suspense>} />
         <Route path="admin/users" element={<Suspense fallback={<PageLoader />}><AdminUsersPage /></Suspense>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

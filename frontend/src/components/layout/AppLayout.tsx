@@ -1,5 +1,5 @@
 import { useState, useEffect, Component } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Layout, theme, Result, Button } from 'antd';
 import Sidebar from './Sidebar';
 import Header from './Header';
@@ -49,6 +49,8 @@ class ErrorBoundary extends Component<
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const { token } = theme.useToken();
+  const location = useLocation();
+  const isKnowledgePage = location.pathname === '/knowledge';
 
   const { subscribe } = useRealtimeEvents();
   const { incrementUnread, prependNotification } = useNotificationStore();
@@ -105,6 +107,8 @@ export default function AppLayout() {
             overflow: 'hidden',
             position: 'relative',
             zIndex: 1,
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
           <ErrorBoundary>
@@ -112,7 +116,7 @@ export default function AppLayout() {
           </ErrorBoundary>
         </Content>
       </Layout>
-      <AiChatPanel />
+      {!isKnowledgePage && <AiChatPanel />}
     </Layout>
   );
 }

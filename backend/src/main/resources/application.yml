@@ -6,6 +6,11 @@ spring:
     virtual:
       enabled: true
 
+  servlet:
+    multipart:
+        max-file-size: 10MB
+        max-request-size: 10MB
+
   datasource:
     url: jdbc:postgresql://localhost:5432/breeze
     username: breeze
@@ -38,7 +43,7 @@ spring:
         api-key: ${EMBEDDING_API_KEY:}
         base-url: ${EMBEDDING_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
         options:
-          model: ${EMBEDDING_MODEL:text-embedding-v3}
+          model: ${EMBEDDING_MODEL:text-embedding-v4}
 
     vectorstore:
       pgvector:
@@ -92,6 +97,11 @@ app:
       bucket-name: ${S3_BUCKET:breeze}
       cdn-domain: ${S3_CDN_DOMAIN:}
       url-expiration-minutes: ${S3_URL_EXPIRATION:120}
+    knowledge:
+      splitter:
+        default-chunk-size: 500
+        default-overlap: 50
+        max-chunks-per-doc: 100
 
 management:
   endpoints:
